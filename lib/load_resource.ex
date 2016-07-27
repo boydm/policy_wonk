@@ -1,8 +1,8 @@
 defmodule PolicyWonk.LoadResource do
 
   @error_handler  Application.get_env(:policy_wonk, PolicyWonk)[:error_handler]
-  @app_loader     Application.get_env(:policy_wonk, PolicyWonk)[:loader]
-  @load_async     Application.get_env(:policy_wonk, PolicyWonk)[:async]
+  @loader         Application.get_env(:policy_wonk, PolicyWonk)[:loader]
+  @load_async     Application.get_env(:policy_wonk, PolicyWonk)[:load_async]
 
   #----------------------------------------------------------------------------
   def init(opts) when is_map(opts) do
@@ -60,7 +60,7 @@ defmodule PolicyWonk.LoadResource do
     loader =
       opts[:loader] ||
       conn.private[:phoenix_controller] ||
-      @app_loader ||
+      @loader ||
       conn.private[:phoenix_router]
     unless loader do
       raise "unable to find a resource loader module"
@@ -68,19 +68,19 @@ defmodule PolicyWonk.LoadResource do
 
     # load the resources. May be async
     cond do
-      opts.async ->   async_loader(conn, loader, opts.resource_list)
-      true ->         sync_loader(conn, loader, opts.resource_list)
+      opts.async ->   async_loader(conn, loader, opts)
+      true ->         sync_loader(conn, loader, opts)
     end
   end # def call
 
   #----------------------------------------------------------------------------
-  defp async_loader(conn, loader, resource_list) do
+  defp async_loader(conn, loader, opts) do
     # asynch version of the loader. use filter_map to build a list of loader
     # tasks that are only for non-already-loaded resources. Then wait for all
     # of those asynchronous tasks to complete. This is part of why I love Elixir
 
     # spin up tasks for all the loads
-    res_tasks = Enum.filter_map( resource_list, fn(res_type) ->
+    res_tasks = Enum.filter_map( opts.resource_list, fn(res_type) ->
           # the filter
           conn.assigns[res_type] == nil
         end, fn(res_type) ->
@@ -94,32 +94,34 @@ defmodule PolicyWonk.LoadResource do
         assign_resource(
           acc_conn,
           res_type,
-          Task.await(task)
+          Task.await(task),
+          opts
         )
       end)
   end
 
   #----------------------------------------------------------------------------
-  defp sync_loader(conn, loader, resource_list) do
+  defp sync_loader(conn, loader, opts) do
     # wait for the async tasks to complete
-    Enum.reduce_while( resource_list, conn, fn (res_type, acc_conn )->
+    Enum.reduce_while( opts.resource_list, conn, fn (res_type, acc_conn )->
         assign_resource(
           acc_conn,
           res_type,
-          loader.load_resource(acc_conn, res_type, acc_conn.params)
+          loader.load_resource(acc_conn, res_type, acc_conn.params),
+          opts
         )
       end)
   end
 
   #----------------------------------------------------------------------------
-  defp assign_resource(conn, resource_id, resource) do
+  defp assign_resource(conn, resource_id, resource, opts) do
     case resource do
       nil ->
-        case @error_handler do
+        case opts.error_handler do
           nil -> raise "No Policy Error handler defined"
-          handler ->
+          errh ->
             # failed to load the resource. return a 404
-            {:halt, Plug.Conn.halt(handler.resource_not_found(conn))}
+            {:halt, Plug.Conn.halt(errh.resource_not_found(conn))}
         end
       resource ->
         {:cont, Plug.Conn.assign(conn, resource_id, resource)}

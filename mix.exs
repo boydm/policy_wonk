@@ -4,7 +4,6 @@ defmodule PolicyWonk.Mixfile do
   @version "0.0.1"
   @url "https://github.com/boydm/policy_wonk"
 
-
   def project do
     [
       app: :policy_wonk,

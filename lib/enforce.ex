@@ -1,16 +1,9 @@
 defmodule PolicyWonk.Enforce do
 
-  @route_policies Application.get_env(:slinger, Policy)[:route_policies]
-  @error_handler  Application.get_env(:slinger, Policy)[:error_handler]
+  @route_policies Application.get_env(:policy_wonk, PolicyWonk)[:route_policies]
+  @error_handler  Application.get_env(:policy_wonk, PolicyWonk)[:error_handler]
 
   #----------------------------------------------------------------------------
-  def init(opts) when is_list(opts) do
-    # opts are one or more (in a list) policies to execute in addition
-    # to the action, if there is an action (won't be in the case of a route)
-    opts
-  end
-
-
   def init(opts) when is_map(opts) do
     # explicitly copy map options over. reduces to just the ones I know.
     %{

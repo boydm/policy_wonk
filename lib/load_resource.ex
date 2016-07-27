@@ -1,8 +1,8 @@
 defmodule PolicyWonk.LoadResource do
 
-  @error_handler  Application.get_env(:slinger, Policy)[:error_handler]
-  @app_loader     Application.get_env(:slinger, Policy)[:loader]
-  @load_async     Application.get_env(:slinger, Policy)[:async]
+  @error_handler  Application.get_env(:policy_wonk, PolicyWonk)[:error_handler]
+  @app_loader     Application.get_env(:policy_wonk, PolicyWonk)[:loader]
+  @load_async     Application.get_env(:policy_wonk, PolicyWonk)[:async]
 
   #----------------------------------------------------------------------------
   def init(opts) when is_map(opts) do

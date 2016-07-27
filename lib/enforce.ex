@@ -55,8 +55,10 @@ defmodule PolicyWonk.Enforce do
     # Enumerate through all the policies. Fail if any fail
     Enum.reduce_while( policy_list, conn, fn(policy, acc_conn) ->
       case handler.policy( acc_conn, policy ) do
-        {:ok, policy_conn}   -> {:cont, policy_conn}
-        { _err, policy_conn} -> {:halt, Plug.Conn.halt(policy_conn) }
+        {:ok, policy_conn = %Plug.Conn{} }    ->
+          {:cont, policy_conn}
+        { _err, policy_conn  = %Plug.Conn{} } ->
+          {:halt, Plug.Conn.halt(policy_conn) }
         _ -> raise "malformed policy response"
       end
     end)

@@ -28,7 +28,7 @@ defmodule PolicyWonk.Mixfile do
       Works very well with Phoenix and Ecto, but depends only on Plug.
       MIT license
       """
-]
+    ]
   end
 
   def application do

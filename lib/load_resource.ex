@@ -116,6 +116,15 @@ defmodule PolicyWonk.LoadResource do
   #----------------------------------------------------------------------------
   defp assign_resource(conn, resource_id, resource, opts) do
     case resource do
+      {:ok, resource} ->
+        {:cont, Plug.Conn.assign(conn, resource_id, resource)}
+      {:err, msg} ->
+        case opts.error_handler do
+          nil -> raise "No Policy Error handler defined"
+          errh ->
+            # failed to load the resource. return a 404
+            {:halt, Plug.Conn.halt(errh.resource_not_found(conn, msg))}
+        end
       nil ->
         case opts.error_handler do
           nil -> raise "No Policy Error handler defined"

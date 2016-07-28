@@ -102,8 +102,11 @@ defmodule PolicyWonk.LoadResource do
 
   #----------------------------------------------------------------------------
   defp sync_loader(conn, loader, opts) do
-    # wait for the async tasks to complete
-    Enum.reduce_while( opts.resource_list, conn, fn (res_type, acc_conn )->
+    # reject loading any resources already assigned into the conn
+    # this is done by the filter_map in the async version
+    Enum.reject(opts.resource_list, fn(r) -> conn.assigns[r] end)
+    # load the remaining resources
+    |> Enum.reduce_while( conn, fn (res_type, acc_conn )->
         assign_resource(
           acc_conn,
           res_type,

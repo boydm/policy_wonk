@@ -1,7 +1,6 @@
 defmodule PolicyWonk.Enforce do
 
-  @route_policies Application.get_env(:policy_wonk, PolicyWonk)[:route_policies]
-  @error_handler  Application.get_env(:policy_wonk, PolicyWonk)[:error_handler]
+  @config_policies Application.get_env(:policy_wonk, PolicyWonk)[:policy_modules]
 
   # define a policy error here - not found or something like that
   defmodule PolicyError do
@@ -13,8 +12,7 @@ defmodule PolicyWonk.Enforce do
     # explicitly copy map options over. reduces to just the ones I know.
     %{
       policies:       opts[:policies],
-      handler:        opts[:handler],
-      error_handler:  opts[:error_handler] || @error_handler
+      handler:        opts[:handler]
     }
   end
   def init(opts) when is_list(opts) do
@@ -22,8 +20,7 @@ defmodule PolicyWonk.Enforce do
     # opts must be a list of strings or atoms...
     %{
       policies:       opts,
-      handler:        nil,
-      error_handler:  @error_handler
+      handler:        nil
     }
   end
   def init(opts), do: init( [opts] )
@@ -38,7 +35,7 @@ defmodule PolicyWonk.Enforce do
     handlers = []
       |> append_truthy( opts[:policy_handler] )
       |> append_truthy( conn.private[:phoenix_controller] )
-      |> append_truthy( @route_policies )
+      |> append_truthy( @config_policies )
       |> append_truthy( conn.private[:phoenix_router] )
     if handlers == [] do
       raise %PolicyError{message: "No policy modules set"}
@@ -153,10 +150,10 @@ defmodule PolicyWonk.Enforce do
 
   #----------------------------------------------------------------------------
   defp append_truthy(list, element) when is_list(list) do
-    if element do
-      list ++ [element]
-    else
-      list
+    cond do
+      is_list(element) -> list ++ element
+      element -> list ++ [element]
+      true -> list
     end
   end
 

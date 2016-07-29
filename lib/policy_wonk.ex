@@ -7,8 +7,12 @@ defmodule PolicyWonk do
       #------------------------------------------------------------------------
       def authorized?(conn, action_or_name) do
         case policy(conn, action_or_name) do
-          {:ok, _}            -> true
-          _                   -> false
+          :ok ->        true
+          true ->       true
+          false ->      false
+          {:ok, _} ->   true
+          {:err, _} ->  false
+          _         ->  false
         end
       end
       

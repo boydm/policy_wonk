@@ -86,7 +86,7 @@ defmodule PolicyWonk.Enforce do
     |> case do
       :not_found ->
         # The policy wasn't found on any handler. raise an error
-        msg = "#{IO.ANSI.red}Unable to a #{IO.ANSI.yellow}policy#{IO.ANSI.red} definition for:\n" <>
+        msg = "#{IO.ANSI.red}Unable find to a #{IO.ANSI.yellow}policy#{IO.ANSI.red} definition for:\n" <>
           "#{IO.ANSI.green}Policy: #{IO.ANSI.yellow}#{inspect(policy)}\n" <>
           "#{IO.ANSI.green}In any of the following modules...#{IO.ANSI.yellow}\n" <>
           Enum.reduce(handlers, "", fn(h, acc) ->
@@ -131,7 +131,7 @@ defmodule PolicyWonk.Enforce do
     |> case do
       :not_found ->
         # The policy wasn't found on any handler. raise an error
-        msg = "#{IO.ANSI.red}Unable to a #{IO.ANSI.yellow}policy_error#{IO.ANSI.red} definition for...\n" <>
+        msg = "#{IO.ANSI.red}Unable find to a #{IO.ANSI.yellow}policy_error#{IO.ANSI.red} definition for...\n" <>
           "#{IO.ANSI.green}err_data: #{IO.ANSI.red}#{inspect(err_data)}\n" <>
           "#{IO.ANSI.green}In any of the following modules...#{IO.ANSI.yellow}\n" <>
           Enum.reduce(handlers, "", fn(h, acc) ->

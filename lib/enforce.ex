@@ -33,17 +33,17 @@ defmodule PolicyWonk.Enforce do
   def call(conn, opts) do
     # get the policy handling modules
     handlers = []
-      |> PolicyWonk.append_truthy( opts[:policy_handler] )
-      |> PolicyWonk.append_truthy( conn.private[:phoenix_controller] )
-      |> PolicyWonk.append_truthy( @config_policies )
-      |> PolicyWonk.append_truthy( conn.private[:phoenix_router] )
+      |> PolicyWonk.Utils.append_truthy( opts[:policy_handler] )
+      |> PolicyWonk.Utils.append_truthy( conn.private[:phoenix_controller] )
+      |> PolicyWonk.Utils.append_truthy( @config_policies )
+      |> PolicyWonk.Utils.append_truthy( conn.private[:phoenix_router] )
     if handlers == [] do
       raise %PolicyError{message: "No policy modules set"}
     end
 
     # Enumerate through all the policies. Fail if any fail
     Enum.reduce_while( opts.policies, conn, fn(policy, acc_conn) ->
-      case PolicyWonk.call_policy( handlers, acc_conn, policy ) do
+      case PolicyWonk.Utils.call_policy( handlers, acc_conn, policy ) do
         {:ok, conn} ->
           {:cont, conn}
         {:err, conn, err_data} ->
@@ -54,7 +54,7 @@ defmodule PolicyWonk.Enforce do
 
 
   #----------------------------------------------------------------------------
-  # similar to PolicyWonk.call_policy
+  # similar to PolicyWonk.Utils.call_policy
   defp handle_error( handlers, conn, err_data ) do
     Enum.find_value(handlers, :not_found, fn(handler) ->
       case handler do

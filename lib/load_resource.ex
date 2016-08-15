@@ -62,10 +62,10 @@ defmodule PolicyWonk.LoadResource do
       # the global loader set in config
       # the router itself
     loaders = []
-      |> append_truthy( opts[:loader] )
-      |> append_truthy( conn.private[:phoenix_controller] )
-      |> append_truthy( @config_loader )
-      |> append_truthy( conn.private[:phoenix_router] )
+      |> PolicyWonk.Utils.append_truthy( opts[:loader] )
+      |> PolicyWonk.Utils.append_truthy( conn.private[:phoenix_controller] )
+      |> PolicyWonk.Utils.append_truthy( @config_loader )
+      |> PolicyWonk.Utils.append_truthy( conn.private[:phoenix_router] )
     if loaders == [] do
       raise %LoaderError{message: "No loader modules set"}
     end
@@ -218,15 +218,6 @@ defmodule PolicyWonk.LoadResource do
           end)
         raise %LoaderError{ message: msg }
       response -> response
-    end
-  end
-
-  #----------------------------------------------------------------------------
-  defp append_truthy(list, element) when is_list(list) do
-    cond do
-      is_list(element) -> list ++ element
-      element -> list ++ [element]
-      true -> list
     end
   end
 

@@ -13,7 +13,7 @@ defmodule PolicyWonk do
       #------------------------------------------------------------------------
       def authorized?(conn, action_or_name) do
         handlers = [ __MODULE__ ]
-          |> PolicyWonk.Utils.append_truthyappend_truthy( @policy_wonk_policies )
+          |> PolicyWonk.Utils.append_truthy( @policy_wonk_policies )
           |> PolicyWonk.Utils.append_truthy( conn.private[:phoenix_router] )
   #      IO.puts "~~~~~~~~~~~~> #{inspect(handlers)}"
         case PolicyWonk.Utils.call_policy(handlers, conn, action_or_name) do

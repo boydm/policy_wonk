@@ -1,5 +1,6 @@
 defmodule PolicyWonk.Utils do
-
+  @moduledoc false
+  
   #----------------------------------------------------------------------------
   def call_policy( handlers, conn, policy ) do
     # try to call the policy on each handler until one that

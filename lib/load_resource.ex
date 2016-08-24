@@ -152,6 +152,7 @@ defmodule PolicyWonk.LoadResource do
         # The policy wasn't found on any handler. raise an error
         msg = "#{IO.ANSI.red}Unable find to a #{IO.ANSI.yellow}load_resource#{IO.ANSI.red} definition for:\n" <>
           "#{IO.ANSI.green}Loader: #{IO.ANSI.yellow}#{inspect(resource_id)}\n" <>
+          "#{IO.ANSI.green}Params: #{IO.ANSI.yellow}#{inspect(conn.params)}\n" <>
           "#{IO.ANSI.green}In any of the following modules...#{IO.ANSI.yellow}\n" <>
           Enum.reduce(loaders, "", fn(h, acc) ->
             case h do

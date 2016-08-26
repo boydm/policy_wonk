@@ -4,7 +4,7 @@ defmodule PolicyWonk.LoadResource do
   @load_async     Application.get_env(:policy_wonk, PolicyWonk)[:load_async]
 
   # define a policy error here - not found or something like that
-  defmodule LoaderError do
+  defmodule Error do
     defexception [message: "#{IO.ANSI.red}Unable to execute a loader\n"]
   end
 
@@ -67,7 +67,7 @@ defmodule PolicyWonk.LoadResource do
       |> PolicyWonk.Utils.append_truthy( @config_loader )
       |> PolicyWonk.Utils.append_truthy( conn.private[:phoenix_router] )
     if loaders == [] do
-      raise %LoaderError{message: "No loader modules set"}
+      raise %PolicyWonk.LoadResource.Error{message: "No loader modules set"}
     end
 
     # load the resources. May be async
@@ -89,7 +89,9 @@ defmodule PolicyWonk.LoadResource do
           conn.assigns[res_type] == nil
         end, fn(res_type) ->
           # the mapper
-          task = Task.async( fn -> call_loader(loaders, conn, res_type, conn.params) end )
+          task = Task.async( fn ->
+            PolicyWonk.Utils.call_loader(loaders, conn, res_type)
+          end)
           {res_type, task}
         end)
 
@@ -115,55 +117,9 @@ defmodule PolicyWonk.LoadResource do
           loaders,
           acc_conn,
           res_type,
-          call_loader(loaders, acc_conn, res_type, acc_conn.params)
+          PolicyWonk.Utils.call_loader(loaders, acc_conn, res_type)
         )
       end)
-  end
-
-  #----------------------------------------------------------------------------
-  defp call_loader( loaders, conn, resource_id, params ) do
-    # try to call the policy on each handler until one that
-    # has the right signature is found
-
-    #find(enumerable, default \\ nil, fun)
-    # use default of :not_found, so I can tell if the function wasn't
-    # found on any of the handlers
-    Enum.find_value(loaders, :not_found, fn(loader) ->
-      case loader do
-        nil -> false  # empty spot in the handler list
-        l ->
-          try do
-            l.load_resource( conn, resource_id, params )
-          rescue
-            _e in UndefinedFunctionError ->
-              # tried to call policy, but the function wasn't defined
-              # on the handler. Return false so that find_value will
-              # try the next handler in the list
-              false
-            _e in FunctionClauseError -> false
-            e ->
-              # some other error. let it raise
-              raise e
-          end
-      end
-    end)
-    |> case do
-      :not_found ->
-        # The policy wasn't found on any handler. raise an error
-        msg = "#{IO.ANSI.red}Unable find to a #{IO.ANSI.yellow}load_resource#{IO.ANSI.red} definition for:\n" <>
-          "#{IO.ANSI.green}Loader: #{IO.ANSI.yellow}#{inspect(resource_id)}\n" <>
-          "#{IO.ANSI.green}Params: #{IO.ANSI.yellow}#{inspect(conn.params)}\n" <>
-          "#{IO.ANSI.green}In any of the following modules...#{IO.ANSI.yellow}\n" <>
-          Enum.reduce(loaders, "", fn(h, acc) ->
-            case h do
-              nil -> acc
-              mod -> acc <> inspect(mod) <> "\n"
-            end
-          end) <>
-          IO.ANSI.red
-        raise %LoaderError{ message: msg }
-      response -> response
-    end
   end
 
   #----------------------------------------------------------------------------
@@ -172,55 +128,102 @@ defmodule PolicyWonk.LoadResource do
       {:ok, resource} ->
         {:cont, Plug.Conn.assign(conn, resource_id, resource)}
       {:err, msg} ->
-        handle_error(loaders, conn, msg)
+        PolicyWonk.Utils.call_loader_error(loaders, conn, msg)
       _ ->
         raise "load_resource must return either {:ok, resource} or {:err, message}"
     end
   end
 
+
+  #----------------------------------------------------------------------------
+#  defp call_loader( loaders, conn, resource_id, params ) do
+#    # try to call the policy on each handler until one that
+#    # has the right signature is found
+#
+#    #find(enumerable, default \\ nil, fun)
+#    # use default of :not_found, so I can tell if the function wasn't
+#    # found on any of the handlers
+#    Enum.find_value(loaders, :not_found, fn(loader) ->
+#      case loader do
+#        nil -> false  # empty spot in the handler list
+#        l ->
+#          try do
+#            l.load_resource( conn, resource_id, params )
+#          rescue
+#            _e in UndefinedFunctionError ->
+#              # tried to call policy, but the function wasn't defined
+#              # on the handler. Return false so that find_value will
+#              # try the next handler in the list
+#              false
+#            _e in FunctionClauseError -> false
+#            e ->
+#              # some other error. let it raise
+#              raise e
+#          end
+#      end
+#    end)
+#    |> case do
+#      :not_found ->
+#        # The policy wasn't found on any handler. raise an error
+#        msg = "#{IO.ANSI.red}Unable find to a #{IO.ANSI.yellow}load_resource#{IO.ANSI.red} definition for:\n" <>
+#          "#{IO.ANSI.green}Loader: #{IO.ANSI.yellow}#{inspect(resource_id)}\n" <>
+#          "#{IO.ANSI.green}Params: #{IO.ANSI.yellow}#{inspect(conn.params)}\n" <>
+#          "#{IO.ANSI.green}In any of the following modules...#{IO.ANSI.yellow}\n" <>
+#          Enum.reduce(loaders, "", fn(h, acc) ->
+#            case h do
+#              nil -> acc
+#              mod -> acc <> inspect(mod) <> "\n"
+#            end
+#          end) <>
+#          IO.ANSI.red
+#        raise %LoaderError{ message: msg }
+#      response -> response
+#    end
+#  end
+
   #----------------------------------------------------------------------------
   # similar to call_policy
-  defp handle_error( loaders, conn, err_data ) do
-    Enum.find_value(loaders, :not_found, fn(loader) ->
-      case loader do
-        nil -> false  # empty spot in the handler list
-        l ->
-          try do
-            case l.load_error(conn, err_data ) do
-              conn = %Plug.Conn{} ->
-                {:halt, conn}
-              _ ->
-                raise "load_error must return a conn"
-            end
-          rescue
-            _e in UndefinedFunctionError ->
-              # tried to call policy_error, but the function wasn't defined
-              # on the handler. Return false so that find_value will
-              # try the next handler in the list
-              false
-            _e in FunctionClauseError -> false
-            e ->
-              # some other error. let it raise
-              raise e
-          end
-      end
-    end)
-    |> case do
-      :not_found ->
-        # The policy wasn't found on any handler. raise an error
-        msg = "#{IO.ANSI.red}Unable find to a #{IO.ANSI.yellow}load_error#{IO.ANSI.red} definition for...\n" <>
-          "#{IO.ANSI.green}err_data: #{IO.ANSI.red}#{inspect(err_data)}\n" <>
-          "#{IO.ANSI.green}In any of the following modules...#{IO.ANSI.yellow}\n" <>
-          Enum.reduce(loaders, "", fn(h, acc) ->
-            case h do
-              nil -> acc
-              mod -> acc <> inspect(mod) <> "\n"
-            end
-          end)
-        raise %LoaderError{ message: msg }
-      response -> response
-    end
-  end
+#  defp handle_error( loaders, conn, err_data ) do
+#    Enum.find_value(loaders, :not_found, fn(loader) ->
+#      case loader do
+#        nil -> false  # empty spot in the handler list
+#        l ->
+#          try do
+#            case l.load_error(conn, err_data ) do
+#              conn = %Plug.Conn{} ->
+#                {:halt, conn}
+#              _ ->
+#                raise "load_error must return a conn"
+#            end
+#          rescue
+#            _e in UndefinedFunctionError ->
+#              # tried to call policy_error, but the function wasn't defined
+#              # on the handler. Return false so that find_value will
+#              # try the next handler in the list
+#              false
+#            _e in FunctionClauseError -> false
+#            e ->
+#              # some other error. let it raise
+#              raise e
+#          end
+#      end
+#    end)
+#    |> case do
+#      :not_found ->
+#        # The policy wasn't found on any handler. raise an error
+#        msg = "#{IO.ANSI.red}Unable find to a #{IO.ANSI.yellow}load_error#{IO.ANSI.red} definition for...\n" <>
+#          "#{IO.ANSI.green}err_data: #{IO.ANSI.red}#{inspect(err_data)}\n" <>
+#          "#{IO.ANSI.green}In any of the following modules...#{IO.ANSI.yellow}\n" <>
+#          Enum.reduce(loaders, "", fn(h, acc) ->
+#            case h do
+#              nil -> acc
+#              mod -> acc <> inspect(mod) <> "\n"
+#            end
+#          end)
+#        raise %LoaderError{ message: msg }
+#      response -> response
+#    end
+#  end
 
 end
 

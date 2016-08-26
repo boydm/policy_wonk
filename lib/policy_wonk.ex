@@ -1,10 +1,6 @@
 defmodule PolicyWonk do
   
   # define a policy error here - not found or something like that
-  defmodule PolicyError do
-    defexception [message: "#{IO.ANSI.red}Unable to execute a policy\n"]
-  end
-
   #===========================================================================
   defmacro __using__(_opts) do
     quote do

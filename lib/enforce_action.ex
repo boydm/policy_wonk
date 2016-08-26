@@ -25,4 +25,3 @@ defmodule PolicyWonk.EnforceAction do
     PolicyWonk.Enforce.call(conn, opts)
   end
 end
-

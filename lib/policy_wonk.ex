@@ -1,5 +1,6 @@
 defmodule PolicyWonk do
-  
+  alias PolicyWonk.Utils
+
   # define a policy error here - not found or something like that
   #===========================================================================
   defmacro __using__(_opts) do
@@ -9,9 +10,9 @@ defmodule PolicyWonk do
       #------------------------------------------------------------------------
       def authorized?(conn, action_or_name) do
         handlers = [ __MODULE__ ]
-          |> PolicyWonk.Utils.append_truthy( @policy_wonk_policies )
-          |> PolicyWonk.Utils.append_truthy( conn.private[:phoenix_router] )
-        case PolicyWonk.Utils.call_policy(handlers, conn, action_or_name) do
+          |> Utils.append_truthy( @policy_wonk_policies )
+          |> Utils.append_truthy( Utils.map_exists(conn, [:private, :phoenix_router]) )
+        case Utils.call_policy(handlers, conn, action_or_name) do
           :ok ->        true
           true ->       true
           false ->      false

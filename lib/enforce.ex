@@ -1,4 +1,5 @@
 defmodule PolicyWonk.Enforce do
+  alias PolicyWonk.Utils
 
   @config_policies Application.get_env(:policy_wonk, PolicyWonk)[:policy_modules]
 
@@ -33,40 +34,23 @@ defmodule PolicyWonk.Enforce do
   def call(conn, opts) do
     # get the policy handling modules
     handlers = []
-      |> PolicyWonk.Utils.append_truthy( opts[:policy_handler] )
-#      |> PolicyWonk.Utils.append_truthy( conn.private[:phoenix_controller] )
-      |> PolicyWonk.Utils.append_truthy( mapper(conn, [:private, :phoenix_controller]) )
-      |> PolicyWonk.Utils.append_truthy( @config_policies )
-#      |> PolicyWonk.Utils.append_truthy( conn.private[:phoenix_router] )
-      |> PolicyWonk.Utils.append_truthy( mapper(conn, [:private, :phoenix_router]) )
+      |> Utils.append_truthy( opts[:policy_handler] )
+      |> Utils.append_truthy( Utils.map_exists(conn, [:private, :phoenix_controller]) )
+      |> Utils.append_truthy( @config_policies )
+      |> Utils.append_truthy( Utils.map_exists(conn, [:private, :phoenix_router]) )
     if handlers == [] do
       raise %PolicyWonk.Enforce.Error{message: "No policy modules set"}
     end
 
     # Enumerate through all the policies. Fail if any fail
     Enum.reduce_while( opts.policies, conn, fn(policy, acc_conn) ->
-      case PolicyWonk.Utils.call_policy( handlers, acc_conn, policy ) do
+      case Utils.call_policy( handlers, acc_conn, policy ) do
         {:ok, conn} ->
           {:cont, conn}
         {:err, conn, err_data} ->
-          {:halt, PolicyWonk.Utils.call_policy_error( handlers, conn, err_data ) }
+          {:halt, Utils.call_policy_error( handlers, conn, err_data ) }
       end
     end)
   end # def call
-
-
-
-  #----------------------------------------------------------------------------
-  defp mapper(map, atribute) when is_atom(atribute), do: mapper(map, [atribute]) 
-  defp mapper(map, [head | []]) do
-    Map.get(map, head, nil)
-  end
-  defp mapper(map, [head | tail]) do
-    value = Map.get(map, head, nil)
-    cond do
-      is_map(value) -> mapper(value, tail)
-      true -> nil
-    end
-  end
 
 end

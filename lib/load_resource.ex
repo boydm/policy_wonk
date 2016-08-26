@@ -1,4 +1,5 @@
 defmodule PolicyWonk.LoadResource do
+  alias PolicyWonk.Utils
 
   @config_loader  Application.get_env(:policy_wonk, PolicyWonk)[:loader]
   @load_async     Application.get_env(:policy_wonk, PolicyWonk)[:load_async]
@@ -62,10 +63,10 @@ defmodule PolicyWonk.LoadResource do
       # the global loader set in config
       # the router itself
     loaders = []
-      |> PolicyWonk.Utils.append_truthy( opts[:loader] )
-      |> PolicyWonk.Utils.append_truthy( conn.private[:phoenix_controller] )
-      |> PolicyWonk.Utils.append_truthy( @config_loader )
-      |> PolicyWonk.Utils.append_truthy( conn.private[:phoenix_router] )
+      |> Utils.append_truthy( opts[:loader] )
+      |> Utils.append_truthy( Utils.map_exists(conn, [:private, :phoenix_controller]) )
+      |> Utils.append_truthy( @config_loader )
+      |> Utils.append_truthy( Utils.map_exists(conn, [:private, :phoenix_router]) )
     if loaders == [] do
       raise %PolicyWonk.LoadResource.Error{message: "No loader modules set"}
     end
@@ -90,7 +91,7 @@ defmodule PolicyWonk.LoadResource do
         end, fn(res_type) ->
           # the mapper
           task = Task.async( fn ->
-            PolicyWonk.Utils.call_loader(loaders, conn, res_type)
+            Utils.call_loader(loaders, conn, res_type)
           end)
           {res_type, task}
         end)
@@ -117,7 +118,7 @@ defmodule PolicyWonk.LoadResource do
           loaders,
           acc_conn,
           res_type,
-          PolicyWonk.Utils.call_loader(loaders, acc_conn, res_type)
+          Utils.call_loader(loaders, acc_conn, res_type)
         )
       end)
   end
@@ -128,7 +129,7 @@ defmodule PolicyWonk.LoadResource do
       {:ok, resource} ->
         {:cont, Plug.Conn.assign(conn, resource_id, resource)}
       {:err, msg} ->
-        PolicyWonk.Utils.call_loader_error(loaders, conn, msg)
+        Utils.call_loader_error(loaders, conn, msg)
       _ ->
         raise "load_resource must return either {:ok, resource} or {:err, message}"
     end

@@ -82,15 +82,6 @@ defmodule PolicyWonk.Utils do
   end
 
   #----------------------------------------------------------------------------
-  def append_truthy(list, element) when is_list(list) do
-    cond do
-      is_list(element) -> list ++ element
-      element ->          list ++ [element]
-      true ->             list
-    end
-  end
-
-  #----------------------------------------------------------------------------
   defp call_into_list( handlers, callback ) do
     Enum.find_value(handlers, :not_found, fn(handler) ->
       case handler do
@@ -119,6 +110,31 @@ defmodule PolicyWonk.Utils do
         mod -> acc <> inspect(mod) <> "\n"
       end
     end)
+  end
+
+  #----------------------------------------------------------------------------
+  # append element to list, but only if the element is truthy
+  def append_truthy(list, element) when is_list(list) do
+    cond do
+      is_list(element) -> list ++ element
+      element ->          list ++ [element]
+      true ->             list
+    end
+  end
+
+  #----------------------------------------------------------------------------
+  # get a nested value from a map. Returns nil if either the value or the map it is
+  # nested in doesn't exist
+  def map_exists(map, atribute) when is_atom(atribute), do: map_exists(map, [atribute]) 
+  def map_exists(map, [head | []]) do
+    Map.get(map, head, nil)
+  end
+  def map_exists(map, [head | tail]) do
+    value = Map.get(map, head, nil)
+    cond do
+      is_map(value) -> map_exists(value, tail)
+      true -> nil
+    end
   end
 
 end

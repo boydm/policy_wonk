@@ -21,14 +21,12 @@ defmodule PolicyWonk.Utils do
           end) <>
           IO.ANSI.red
         raise %PolicyWonk.Enforce.Error{ message: msg }
-      :ok ->    {:ok, conn}
-      true ->   {:ok, conn}
-      false ->  {:err, conn, nil }
-      {:ok, policy_conn = %Plug.Conn{}} ->
-        {:ok, policy_conn}
-      {:err, err_data} ->
-        {:err, conn, err_data }
-      _ -> raise "malformed policy response"
+      :ok ->                                {:ok, conn}
+      true ->                               {:ok, conn}
+      false ->                              {:err, conn, nil}
+      {:ok, policy_conn = %Plug.Conn{}} ->  {:ok, policy_conn}
+      {:err, err_data} ->                   {:err, conn, err_data}
+      _ ->                                  raise "malformed policy response"
     end
   end
 
@@ -50,10 +48,8 @@ defmodule PolicyWonk.Utils do
             end
           end)
         raise %PolicyWonk.Enforce.Error{ message: msg }
-      conn = %Plug.Conn{} ->
-        conn
-      _ ->
-        raise "policy_error must return a conn"
+      conn = %Plug.Conn{} ->  conn
+      _ -> raise              "policy_error must return a conn"
     end
   end
 
@@ -79,8 +75,7 @@ defmodule PolicyWonk.Utils do
         raise %PolicyWonk.LoadResource.Error{ message: msg }
       response -> response
     end
-  end
-
+  end 
   #----------------------------------------------------------------------------
   def call_loader_error( handlers, conn, err_data ) do
     call_into_list(handlers, fn(handler) ->
@@ -99,10 +94,8 @@ defmodule PolicyWonk.Utils do
             end
           end)
         raise %PolicyWonk.LoadResource.Error{ message: msg }
-      conn = %Plug.Conn{} ->
-        {:halt, conn}
-      _ ->
-        raise "load_error must return a conn"
+      conn = %Plug.Conn{} ->  {:halt, conn}
+      _ ->                    raise "load_error must return a conn"
     end
   end
 
@@ -110,8 +103,8 @@ defmodule PolicyWonk.Utils do
   def append_truthy(list, element) when is_list(list) do
     cond do
       is_list(element) -> list ++ element
-      element -> list ++ [element]
-      true -> list
+      element ->          list ++ [element]
+      true ->             list
     end
   end
 

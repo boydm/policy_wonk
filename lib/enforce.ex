@@ -34,9 +34,11 @@ defmodule PolicyWonk.Enforce do
     # get the policy handling modules
     handlers = []
       |> PolicyWonk.Utils.append_truthy( opts[:policy_handler] )
-      |> PolicyWonk.Utils.append_truthy( conn.private[:phoenix_controller] )
+#      |> PolicyWonk.Utils.append_truthy( conn.private[:phoenix_controller] )
+      |> PolicyWonk.Utils.append_truthy( mapper(conn, [:private, :phoenix_controller]) )
       |> PolicyWonk.Utils.append_truthy( @config_policies )
-      |> PolicyWonk.Utils.append_truthy( conn.private[:phoenix_router] )
+#      |> PolicyWonk.Utils.append_truthy( conn.private[:phoenix_router] )
+      |> PolicyWonk.Utils.append_truthy( mapper(conn, [:private, :phoenix_router]) )
     if handlers == [] do
       raise %PolicyWonk.Enforce.Error{message: "No policy modules set"}
     end
@@ -51,5 +53,19 @@ defmodule PolicyWonk.Enforce do
       end
     end)
   end # def call
+
+
+
+  #----------------------------------------------------------------------------
+  defp mapper(map, atribute) when is_atom(atribute), do: mapper(map, [atribute]) 
+  defp mapper(map, [head | nil]) do
+    map[head]
+  end
+  defp mapper(map, [head | tail]) do
+    cond do
+      is_map(map[head]) -> mapper(map[head], tail)
+      true -> nil
+    end
+  end
 
 end

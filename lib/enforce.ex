@@ -59,11 +59,12 @@ defmodule PolicyWonk.Enforce do
   #----------------------------------------------------------------------------
   defp mapper(map, atribute) when is_atom(atribute), do: mapper(map, [atribute]) 
   defp mapper(map, [head | nil]) do
-    map[head]
+    Map.get(map, head, nil)
   end
   defp mapper(map, [head | tail]) do
+    value = Map.get(map, head, nil)
     cond do
-      is_map(map[head]) -> mapper(map[head], tail)
+      is_map(value) -> mapper(value, tail)
       true -> nil
     end
   end

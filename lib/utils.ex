@@ -90,13 +90,11 @@ defmodule PolicyWonk.Utils do
           try do
             callback.( h )
           rescue
-            _e in UndefinedFunctionError ->
-              # try the next handler in the list
-              false
-            _e in FunctionClauseError -> false
-            e ->
-              # some other error. let it raise
-              raise e
+            # if a match wasn't found on the module, try the next in the list
+            _e in UndefinedFunctionError -> false
+            _e in FunctionClauseError ->    false
+            # some other error. let it raise
+            e -> raise e
           end
       end
     end)

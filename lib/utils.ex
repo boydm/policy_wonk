@@ -13,12 +13,7 @@ defmodule PolicyWonk.Utils do
         msg = "#{IO.ANSI.red}Unable find to a #{IO.ANSI.yellow}policy#{IO.ANSI.red} definition for:\n" <>
           "#{IO.ANSI.green}Policy: #{IO.ANSI.yellow}#{inspect(policy)}\n" <>
           "#{IO.ANSI.green}In any of the following modules...#{IO.ANSI.yellow}\n" <>
-          Enum.reduce(handlers, "", fn(h, acc) ->
-            case h do
-              nil -> acc
-              mod -> acc <> inspect(mod) <> "\n"
-            end
-          end) <>
+          build_handlers_msg( handlers ) <>
           IO.ANSI.red
         raise %PolicyWonk.Enforce.Error{ message: msg }
       :ok ->                                {:ok, conn}
@@ -41,12 +36,8 @@ defmodule PolicyWonk.Utils do
         msg = "#{IO.ANSI.red}Unable find to a #{IO.ANSI.yellow}policy_error#{IO.ANSI.red} definition for...\n" <>
           "#{IO.ANSI.green}err_data: #{IO.ANSI.red}#{inspect(err_data)}\n" <>
           "#{IO.ANSI.green}In any of the following modules...#{IO.ANSI.yellow}\n" <>
-          Enum.reduce(handlers, "", fn(h, acc) ->
-            case h do
-              nil -> acc
-              mod -> acc <> inspect(mod) <> "\n"
-            end
-          end)
+          build_handlers_msg( handlers ) <>
+          IO.ANSI.red
         raise %PolicyWonk.Enforce.Error{ message: msg }
       conn = %Plug.Conn{} ->  conn
       _ -> raise              "policy_error must return a conn"
@@ -65,12 +56,7 @@ defmodule PolicyWonk.Utils do
           "#{IO.ANSI.green}Loader: #{IO.ANSI.yellow}#{inspect(resource)}\n" <>
           "#{IO.ANSI.green}Params: #{IO.ANSI.yellow}#{inspect(conn.params)}\n" <>
           "#{IO.ANSI.green}In any of the following modules...#{IO.ANSI.yellow}\n" <>
-          Enum.reduce(handlers, "", fn(h, acc) ->
-            case h do
-              nil -> acc
-              mod -> acc <> inspect(mod) <> "\n"
-            end
-          end) <>
+          build_handlers_msg( handlers ) <>
           IO.ANSI.red
         raise %PolicyWonk.LoadResource.Error{ message: msg }
       response -> response
@@ -87,12 +73,8 @@ defmodule PolicyWonk.Utils do
         msg = "#{IO.ANSI.red}Unable find to a #{IO.ANSI.yellow}load_error#{IO.ANSI.red} definition for...\n" <>
           "#{IO.ANSI.green}err_data: #{IO.ANSI.red}#{inspect(err_data)}\n" <>
           "#{IO.ANSI.green}In any of the following modules...#{IO.ANSI.yellow}\n" <>
-          Enum.reduce(handlers, "", fn(h, acc) ->
-            case h do
-              nil -> acc
-              mod -> acc <> inspect(mod) <> "\n"
-            end
-          end)
+          build_handlers_msg( handlers ) <>
+          IO.ANSI.red
         raise %PolicyWonk.LoadResource.Error{ message: msg }
       conn = %Plug.Conn{} ->  {:halt, conn}
       _ ->                    raise "load_error must return a conn"
@@ -128,6 +110,16 @@ defmodule PolicyWonk.Utils do
       end
     end)
   end
-  
+
+  #----------------------------------------------------------------------------
+  defp build_handlers_msg( handlers ) do
+    Enum.reduce(handlers, "", fn(h, acc) ->
+      case h do
+        nil -> acc
+        mod -> acc <> inspect(mod) <> "\n"
+      end
+    end)
+  end
+
 end
 

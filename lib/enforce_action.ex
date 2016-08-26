@@ -1,6 +1,6 @@
 defmodule PolicyWonk.EnforceAction do
 
-  defmodule ActionPolicyError do
+  defmodule Error do
     defexception [
       message: "PolicyWonk.EnforceAction can only be used within a controller"
     ]
@@ -17,7 +17,7 @@ defmodule PolicyWonk.EnforceAction do
   def call(conn, opts) do
     opts = case conn.private[:phoenix_action] do
       nil ->
-        raise ActionPolicyError
+        raise PolicyWonk.EnforceAction.Error
       action ->
         Map.put(opts, :policies, [action])
     end

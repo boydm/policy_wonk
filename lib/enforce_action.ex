@@ -10,8 +10,7 @@ defmodule PolicyWonk.EnforceAction do
   #----------------------------------------------------------------------------
   def init(opts) do
     PolicyWonk.Enforce.init( %{
-        handler:        opts[:handler],
-        error_handler:  opts[:error_handler]
+        handler:        opts[:handler]
       })
   end
 

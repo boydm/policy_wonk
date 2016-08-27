@@ -12,6 +12,8 @@ defmodule PolicyWonk.UtilsTest do
     def policy( conn, :mod_a_policy ) do
       {:ok, Plug.Conn.assign(conn, :found, "mod_a_policy")}
     end
+    def policy_error(conn, "err_generic"),  do: Plug.Conn.assign(conn, :errd, "err_generic_a")
+    def policy_error(conn, "err_data_a"),   do: Plug.Conn.assign(conn, :errd, "err_data_a")
   end
 
   defmodule ModB do
@@ -28,15 +30,23 @@ defmodule PolicyWonk.UtilsTest do
     def policy( _conn, :fail_error ), do: :error
     def policy( _conn, :fail_false ), do: false
     def policy( _conn, :fail_other ), do: "fail_other"
+
+    def policy_error(conn, "err_generic"),  do: Plug.Conn.assign(conn, :errd, "err_generic_b")
+    def policy_error(conn, "err_data_b"),   do: Plug.Conn.assign(conn, :errd, "err_data_b")
+    def policy_error(_conn, "invalid"),     do: "invalid"
   end
+
+
+  setup do
+    %{conn: Plug.Test.conn(:get, "/abc")}
+  end
+
 
   #============================================================================
   # call_policy
 
   #----------------------------------------------------------------------------
-  test "call_policy calls policy handlers in the given order" do
-    conn = Plug.Test.conn(:get, "/abc")
-
+  test "call_policy calls policy handlers in the given order", %{conn: conn} do
     {:ok, conn} = Utils.call_policy([ModA,ModB], conn, :generic)
     assert conn.assigns.found == "mod_a_generic"
     
@@ -45,9 +55,7 @@ defmodule PolicyWonk.UtilsTest do
   end
 
   #----------------------------------------------------------------------------
-  test "call_policy skips nil handlers in the given order" do
-    conn = Plug.Test.conn(:get, "/abc")
-
+  test "call_policy skips nil handlers in the given order", %{conn: conn} do
     {:ok, conn} = Utils.call_policy([nil,ModA,ModB], conn, :generic)
     assert conn.assigns.found == "mod_a_generic"
         
@@ -56,9 +64,7 @@ defmodule PolicyWonk.UtilsTest do
   end
 
   #----------------------------------------------------------------------------
-  test "call_policy finds handler down the chain in the given order" do
-    conn = Plug.Test.conn(:get, "/abc")
-
+  test "call_policy finds handler down the chain in the given order", %{conn: conn} do
     {:ok, conn} = Utils.call_policy([ModA,ModB], conn, :mod_a_policy)
     assert conn.assigns.found == "mod_a_policy"
 
@@ -67,47 +73,77 @@ defmodule PolicyWonk.UtilsTest do
   end
 
   #----------------------------------------------------------------------------
-  test "call_policy raises if policy is missing" do
-    conn = Plug.Test.conn(:get, "/abc")
+  test "call_policy raises if policy is missing", %{conn: conn} do
     assert_raise PolicyWonk.Enforce.Error, fn ->
       Utils.call_policy([ModA,ModB], conn, :missing)
     end
   end
 
   #----------------------------------------------------------------------------
-  test "call_policy returns conn if :ok" do
-    conn = Plug.Test.conn(:get, "/abc")
+  test "call_policy returns conn if :ok", %{conn: conn} do
     assert Utils.call_policy([ModA,ModB], conn, :ok_ok) == {:ok, conn}
   end
 
   #----------------------------------------------------------------------------
-  test "call_policy returns conn if true" do
-    conn = Plug.Test.conn(:get, "/abc")
+  test "call_policy returns conn if true", %{conn: conn} do
     assert Utils.call_policy([ModA,ModB], conn, :ok_true) == {:ok, conn}
   end
 
   #----------------------------------------------------------------------------
-  test "call_policy returns error data" do
-    conn = Plug.Test.conn(:get, "/abc")
+  test "call_policy returns error data", %{conn: conn} do
     assert Utils.call_policy([ModA,ModB], conn, :fail_data) == {:err, conn, "err_data"}
   end
 
   #----------------------------------------------------------------------------
-  test "call_policy returns nil error data on false, :err, or :error" do
-    conn = Plug.Test.conn(:get, "/abc")
+  test "call_policy returns nil error data on false, :err, or :error", %{conn: conn} do
     assert Utils.call_policy([ModA,ModB], conn, :fail_false) == {:err, conn, nil}
     assert Utils.call_policy([ModA,ModB], conn, :fail_err) ==   {:err, conn, nil}
     assert Utils.call_policy([ModA,ModB], conn, :fail_error) == {:err, conn, nil}
   end
 
   #----------------------------------------------------------------------------
-  test "call_policy raises on unknown responses" do
-    conn = Plug.Test.conn(:get, "/abc")
+  test "call_policy raises on unknown responses", %{conn: conn} do
     assert_raise RuntimeError, fn ->
       Utils.call_policy([ModA,ModB], conn, :fail_other)
     end
   end
 
+
+  #============================================================================
+  # call_policy_error
+  #----------------------------------------------------------------------------
+  test "call_policy_error calls policy handlers in the given order", %{conn: conn} do
+    conn = Utils.call_policy_error([ModA,ModB], conn, "err_generic")
+    assert conn.assigns.errd == "err_generic_a"
+
+    conn = Utils.call_policy_error([ModB,ModA], conn, "err_generic")
+    assert conn.assigns.errd == "err_generic_b"
+  end
+
+  #----------------------------------------------------------------------------
+  test "call_policy_error skips nil handlers in the given order", %{conn: conn} do
+    conn = Utils.call_policy_error([nil,ModA,ModB], conn, "err_generic")
+    assert conn.assigns.errd == "err_generic_a"
+
+    conn = Utils.call_policy_error([nil,ModB,ModA], conn, "err_generic")
+    assert conn.assigns.errd == "err_generic_b"
+  end
+
+  #----------------------------------------------------------------------------
+  test "call_policy_error finds handler down the chain in the given order", %{conn: conn} do
+    conn = Utils.call_policy_error([ModA,ModB], conn, "err_data_a")
+    assert conn.assigns.errd == "err_data_a"
+
+    conn = Utils.call_policy_error([ModA,nil,ModB], conn, "err_data_b")
+    assert conn.assigns.errd == "err_data_b"
+  end
+
+  #----------------------------------------------------------------------------
+  test "call_policy_error raises if policy is missing", %{conn: conn} do
+    assert_raise PolicyWonk.Enforce.Error, fn ->
+      Utils.call_policy_error([ModA,ModB], conn, "missing")
+    end
+  end
 
 
   #============================================================================

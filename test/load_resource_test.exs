@@ -15,14 +15,29 @@ defmodule PolicyWonk.LoadResourceTest do
     def load_resource(_conn, :invalid, _params) do
       {:err, "invalid"}
     end
+    def load_resource(_conn, :bad_wolf, _params) do
+      {:err, "bad_wolf"}
+    end
 
-    #----------------------------------------------------------------------------
     def load_error( conn, "invalid" ) do
       conn
       |> Plug.Conn.put_status(404)
       |> Plug.Conn.halt
     end
   end
+
+  defmodule ModController do
+    def load_resource(_conn, :thing_a, _params) do
+      {:ok, "controller_thing_a"}
+    end
+  end
+
+  defmodule ModRouter do
+    def load_resource(_conn, :thing_a, _params) do
+      {:ok, "router_thing_a"}
+    end
+  end
+
 
   #============================================================================
   # init
@@ -99,6 +114,43 @@ defmodule PolicyWonk.LoadResourceTest do
   end
 
   #----------------------------------------------------------------------------
+  test "call uses policy on (optional) controller", %{conn: conn} do
+    opts = %{
+        resource_list: [:thing_a],
+        loader: nil,
+        async: false       # From config
+      }
+    conn = Map.put(conn, :private, %{phoenix_controller: ModController})
+    conn = LoadResource.call(conn, opts)
+    assert conn.assigns.thing_a == "controller_thing_a"
+  end
+
+  #----------------------------------------------------------------------------
+  test "call uses policy on (optional) router", %{conn: conn} do
+    opts = %{
+        resource_list: [:thing_a],
+        loader: nil,
+        async: false       # From config
+      }
+    conn = Map.put(conn, :private, %{phoenix_router: ModRouter})
+    conn = LoadResource.call(conn, opts)
+    assert conn.assigns.thing_a == "router_thing_a"
+  end
+
+
+  #----------------------------------------------------------------------------
+  test "call asserts if the loader cannot be found", %{conn: conn} do
+    opts = %{
+        resource_list: [:missing],
+        loader: ModA,
+        async: false       # From config
+      }
+    assert_raise PolicyWonk.LoadResource.Error, fn ->
+      LoadResource.call(conn, opts)
+    end
+  end
+
+  #----------------------------------------------------------------------------
   test "call handles load errors", %{conn: conn} do
     opts = %{
         resource_list: [:invalid],
@@ -108,5 +160,18 @@ defmodule PolicyWonk.LoadResourceTest do
     conn = LoadResource.call(conn, opts)
     assert conn.status == 404
   end
+
+  #----------------------------------------------------------------------------
+  test "call asserts if the error handler cannot be found", %{conn: conn} do
+    opts = %{
+        resource_list: [:bad_wolf],
+        loader: ModA,
+        async: false       # From config
+      }
+    assert_raise PolicyWonk.LoadResource.Error, fn ->
+      LoadResource.call(conn, opts)
+    end
+  end
+
 
 end

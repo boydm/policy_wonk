@@ -11,7 +11,7 @@ defmodule PolicyWonk do
       def authorized?(conn, action_or_name) do
         handlers = [ __MODULE__ ]
           |> Utils.append_truthy( @policy_wonk_policies )
-          |> Utils.append_truthy( Utils.map_exists(conn, [:private, :phoenix_router]) )
+          |> Utils.append_truthy( Utils.get_exists(conn, [:private, :phoenix_router]) )
         case Utils.call_policy(handlers, conn, action_or_name) do
           :ok ->        true
           true ->       true

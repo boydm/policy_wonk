@@ -19,6 +19,8 @@ defmodule PolicyWonk.Utils do
       :ok ->                                {:ok, conn}
       true ->                               {:ok, conn}
       false ->                              {:err, conn, nil}
+      :err ->                               {:err, conn, nil}
+      :error ->                             {:err, conn, nil}
       {:ok, policy_conn = %Plug.Conn{}} ->  {:ok, policy_conn}
       {:err, err_data} ->                   {:err, conn, err_data}
       _ ->                                  raise "malformed policy response"
@@ -83,12 +85,12 @@ defmodule PolicyWonk.Utils do
 
   #----------------------------------------------------------------------------
   defp call_into_list( handlers, callback ) do
-    Enum.find_value(handlers, :not_found, fn(handler) ->
+    {:ok, answer} = Enum.find_value(handlers, {:ok, :not_found}, fn(handler) ->
       case handler do
         nil -> false  # empty spot in the handler list
         h ->
           try do
-            callback.( h )
+            {:ok, callback.( h )}
           rescue
             # if a match wasn't found on the module, try the next in the list
             _e in UndefinedFunctionError -> false
@@ -98,6 +100,7 @@ defmodule PolicyWonk.Utils do
           end
       end
     end)
+    answer
   end
 
   #----------------------------------------------------------------------------
@@ -123,14 +126,14 @@ defmodule PolicyWonk.Utils do
   #----------------------------------------------------------------------------
   # get a nested value from a map. Returns nil if either the value or the map it is
   # nested in doesn't exist
-  def map_exists(map, atribute) when is_atom(atribute), do: map_exists(map, [atribute]) 
-  def map_exists(map, [head | []]) do
+  def get_exists(map, atribute) when is_atom(atribute), do: get_exists(map, [atribute]) 
+  def get_exists(map, [head | []]) do
     Map.get(map, head, nil)
   end
-  def map_exists(map, [head | tail]) do
+  def get_exists(map, [head | tail]) do
     value = Map.get(map, head, nil)
     cond do
-      is_map(value) -> map_exists(value, tail)
+      is_map(value) -> get_exists(value, tail)
       true -> nil
     end
   end

@@ -64,9 +64,9 @@ defmodule PolicyWonk.LoadResource do
       # the router itself
     loaders = []
       |> Utils.append_truthy( opts[:loader] )
-      |> Utils.append_truthy( Utils.map_exists(conn, [:private, :phoenix_controller]) )
+      |> Utils.append_truthy( Utils.get_exists(conn, [:private, :phoenix_controller]) )
       |> Utils.append_truthy( @config_loader )
-      |> Utils.append_truthy( Utils.map_exists(conn, [:private, :phoenix_router]) )
+      |> Utils.append_truthy( Utils.get_exists(conn, [:private, :phoenix_router]) )
     if loaders == [] do
       raise %PolicyWonk.LoadResource.Error{message: "No loader modules set"}
     end

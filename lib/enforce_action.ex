@@ -16,7 +16,7 @@ defmodule PolicyWonk.EnforceAction do
   end
 
   def call(conn, opts) do
-    opts = case Utils.map_exists(conn, [:private, :phoenix_action]) do
+    opts = case Utils.get_exists(conn, [:private, :phoenix_action]) do
       nil ->
         raise PolicyWonk.EnforceAction.Error
       action ->

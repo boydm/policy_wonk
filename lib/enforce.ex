@@ -35,9 +35,9 @@ defmodule PolicyWonk.Enforce do
     # get the policy handling modules
     handlers = []
       |> Utils.append_truthy( opts[:policy_handler] )
-      |> Utils.append_truthy( Utils.map_exists(conn, [:private, :phoenix_controller]) )
+      |> Utils.append_truthy( Utils.get_exists(conn, [:private, :phoenix_controller]) )
       |> Utils.append_truthy( @config_policies )
-      |> Utils.append_truthy( Utils.map_exists(conn, [:private, :phoenix_router]) )
+      |> Utils.append_truthy( Utils.get_exists(conn, [:private, :phoenix_router]) )
     if handlers == [] do
       raise %PolicyWonk.Enforce.Error{message: "No policy modules set"}
     end

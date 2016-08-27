@@ -24,7 +24,7 @@ defmodule PolicyWonk.Mixfile do
       docs: docs(),
       description: """
       Plug based authorization and resource loading.
-      Works very well with Phoenix and Ecto, but depends only on Plug.
+      Works very well with Phoenix, but depends only on Plug.
       MIT license
       """
     ]

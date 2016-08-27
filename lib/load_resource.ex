@@ -39,6 +39,7 @@ defmodule PolicyWonk.LoadResource do
         Enum.filter_map(list, fn(res) ->
             # the filter
             cond do
+              is_nil(res)       -> false
               is_bitstring(res) -> true
               is_atom(res)      -> true
               true              -> false    # all other types
@@ -126,12 +127,10 @@ defmodule PolicyWonk.LoadResource do
   #----------------------------------------------------------------------------
   defp assign_resource(loaders, conn, resource_id, resource) do
     case resource do
-      {:ok, resource} ->
-        {:cont, Plug.Conn.assign(conn, resource_id, resource)}
-      {:err, msg} ->
-        call_loader_error(loaders, conn, msg)
-      _ ->
-        raise "load_resource must return either {:ok, resource} or {:err, message}"
+      {:ok, resource} ->  {:cont, Plug.Conn.assign(conn, resource_id, resource)}
+      {:err, msg} ->      call_loader_error(loaders, conn, msg)
+      {:error, msg} ->    call_loader_error(loaders, conn, msg)
+      _ -> raise "load_resource must return either {:ok, resource} or {:err, message}"
     end
   end
 

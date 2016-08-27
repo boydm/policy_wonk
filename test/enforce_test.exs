@@ -33,10 +33,6 @@ defmodule PolicyWonk.EnforceTest do
     end
   end
 
-  setup do
-    %{conn: Plug.Test.conn(:get, "/abc")}
-  end
-
   #============================================================================
   # init
   #----------------------------------------------------------------------------
@@ -63,6 +59,9 @@ defmodule PolicyWonk.EnforceTest do
 
   #============================================================================
   # call
+  setup do
+    %{conn: Plug.Test.conn(:get, "/abc")}
+  end
 
   #----------------------------------------------------------------------------
   test "call uses policy on global (config) policies module", %{conn: conn} do

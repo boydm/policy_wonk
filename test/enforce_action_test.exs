@@ -15,10 +15,6 @@ defmodule PolicyWonk.EnforceActionTest do
     end
   end
 
-  setup do
-    %{conn: Plug.Test.conn(:get, "/abc")}
-  end
-
 
   #============================================================================
   # init
@@ -39,6 +35,10 @@ defmodule PolicyWonk.EnforceActionTest do
 
   #============================================================================
   # call
+  setup do
+    %{conn: Plug.Test.conn(:get, "/abc")}
+  end
+
   #----------------------------------------------------------------------------
   test "call tests current action as a policy", %{conn: conn} do
     conn = Map.put( conn,

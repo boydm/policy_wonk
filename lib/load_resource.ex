@@ -91,7 +91,7 @@ defmodule PolicyWonk.LoadResource do
         end, fn(res_type) ->
           # the mapper
           task = Task.async( fn ->
-            Utils.call_loader(loaders, conn, res_type)
+            call_loader(loaders, conn, res_type)
           end)
           {res_type, task}
         end)
@@ -118,7 +118,7 @@ defmodule PolicyWonk.LoadResource do
           loaders,
           acc_conn,
           res_type,
-          Utils.call_loader(loaders, acc_conn, res_type)
+          call_loader(loaders, acc_conn, res_type)
         )
       end)
   end
@@ -129,9 +129,46 @@ defmodule PolicyWonk.LoadResource do
       {:ok, resource} ->
         {:cont, Plug.Conn.assign(conn, resource_id, resource)}
       {:err, msg} ->
-        Utils.call_loader_error(loaders, conn, msg)
+        call_loader_error(loaders, conn, msg)
       _ ->
         raise "load_resource must return either {:ok, resource} or {:err, message}"
+    end
+  end
+
+  #----------------------------------------------------------------------------
+  defp call_loader( handlers, conn, resource ) do
+    Utils.call_into_list(handlers, fn(handler) ->
+      handler.load_resource( conn, resource, conn.params )
+    end)
+    |> case do
+      :not_found ->
+        # load_resource wasn't found on any handler. raise an error
+        msg = "#{IO.ANSI.red}Unable find to a #{IO.ANSI.yellow}load_resource#{IO.ANSI.red} definition for:\n" <>
+          "#{IO.ANSI.green}Loader: #{IO.ANSI.yellow}#{inspect(resource)}\n" <>
+          "#{IO.ANSI.green}Params: #{IO.ANSI.yellow}#{inspect(conn.params)}\n" <>
+          "#{IO.ANSI.green}In any of the following modules...#{IO.ANSI.yellow}\n" <>
+          Utils.build_handlers_msg( handlers ) <>
+          IO.ANSI.red
+        raise %PolicyWonk.LoadResource.Error{ message: msg }
+      response -> response
+    end
+  end 
+  #----------------------------------------------------------------------------
+  defp call_loader_error( handlers, conn, err_data ) do
+    Utils.call_into_list(handlers, fn(handler) ->
+      handler.load_error(conn, err_data )
+    end)
+    |> case do
+      :not_found ->
+        # loader_error wasn't found on any handler. raise an error
+        msg = "#{IO.ANSI.red}Unable find to a #{IO.ANSI.yellow}load_error#{IO.ANSI.red} definition for...\n" <>
+          "#{IO.ANSI.green}err_data: #{IO.ANSI.red}#{inspect(err_data)}\n" <>
+          "#{IO.ANSI.green}In any of the following modules...#{IO.ANSI.yellow}\n" <>
+          Utils.build_handlers_msg( handlers ) <>
+          IO.ANSI.red
+        raise %PolicyWonk.LoadResource.Error{ message: msg }
+      conn = %Plug.Conn{} ->  {:halt, conn}
+      _ ->                    raise "load_error must return a conn"
     end
   end
 

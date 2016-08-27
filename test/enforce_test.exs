@@ -1,5 +1,5 @@
 defmodule PolicyWonk.EnforceTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   alias PolicyWonk.Enforce
   doctest PolicyWonk
 
@@ -11,20 +11,96 @@ defmodule PolicyWonk.EnforceTest do
     end
     def policy( _conn, :ok_ok ),      do: :ok
     def policy( _conn, :ok_true ),    do: true
-    def policy( _conn, :fail_data ),  do: {:err, "err_data"}
+    def policy( _conn, :fail_data ),  do: {:err, "err_generic"}
     def policy( _conn, :fail_err ),   do: :err
     def policy( _conn, :fail_error ), do: :error
     def policy( _conn, :fail_false ), do: false
     def policy( _conn, :fail_other ), do: "fail_other"
 
-    def policy_error(conn, "err_generic"),  do: Plug.Conn.assign(conn, :errd, "err_generic")
+    def policy_error(conn, "err_generic"),  do: Plug.Conn.assign(conn, :errp, "err_generic")
     def policy_error(_conn, "invalid"),     do: "invalid"
   end
 
+  defmodule ModController do
+    def policy( conn, :generic ) do
+      {:ok, Plug.Conn.assign(conn, :found, "mod_controller_generic")}
+    end
+  end
+
+  defmodule ModRouter do
+    def policy( conn, :generic ) do
+      {:ok, Plug.Conn.assign(conn, :found, "mod_router_generic")}
+    end
+  end
 
   setup do
     %{conn: Plug.Test.conn(:get, "/abc")}
   end
+
+  #============================================================================
+  # init
+  #----------------------------------------------------------------------------
+  test "init filters options" do
+    assert Enforce.init(%{
+      policies: [:a,:b],
+      handler: ModA,
+      invalid: "invalid"
+    }) == %{policies: [:a,:b], handler: ModA}
+  end
+
+  #----------------------------------------------------------------------------
+  test "init defaults to nil handler" do
+    assert Enforce.init(%{
+      policies: [:a,:b]
+    }) == %{policies: [:a,:b], handler: nil}
+  end
+
+  #----------------------------------------------------------------------------
+  test "init converts single policy option to the right map" do
+    assert Enforce.init(:policy_name) == %{policies: [:policy_name], handler: nil}
+  end
+
+
+  #============================================================================
+  # call
+
+  #----------------------------------------------------------------------------
+  test "call uses policy on global (config) policies module", %{conn: conn} do
+    opts = %{handler: nil, policies: [:from_config]}
+    conn = Enforce.call(conn, opts)
+    assert conn.assigns.found == "from_config"
+  end
+
+  #----------------------------------------------------------------------------
+  test "call uses policy on the requested module - generic conn", %{conn: conn} do
+    opts = %{handler: ModA, policies: [:generic]}
+    conn = Enforce.call(conn, opts)
+    assert conn.assigns.found == "mod_a_generic"
+  end
+
+  #----------------------------------------------------------------------------
+  test "call uses policy on (optional) controller", %{conn: conn} do
+    opts = %{handler: nil, policies: [:generic]}
+    conn = Map.put(conn, :private, %{phoenix_controller: ModController})
+    conn = Enforce.call(conn, opts)
+    assert conn.assigns.found == "mod_controller_generic"
+  end
+
+  #----------------------------------------------------------------------------
+  test "call uses policy on (optional) router", %{conn: conn} do
+    opts = %{handler: nil, policies: [:generic]}
+    conn = Map.put(conn, :private, %{phoenix_router: ModRouter})
+    conn = Enforce.call(conn, opts)
+    assert conn.assigns.found == "mod_router_generic"
+  end
+
+  #----------------------------------------------------------------------------
+  test "call handles errors after policy failures", %{conn: conn} do
+    opts = %{handler: ModA, policies: [:fail_data]}
+    conn = Enforce.call(conn, opts)
+    assert conn.assigns.errp == "err_generic"
+  end
+
 
   #============================================================================
   # call_policy
@@ -46,7 +122,7 @@ defmodule PolicyWonk.EnforceTest do
 
   #----------------------------------------------------------------------------
   test "call_policy returns error data", %{conn: conn} do
-    assert Enforce.call_policy([ModA], conn, :fail_data) == {:err, conn, "err_data"}
+    assert Enforce.call_policy([ModA], conn, :fail_data) == {:err, conn, "err_generic"}
   end
 
   #----------------------------------------------------------------------------
@@ -68,7 +144,7 @@ defmodule PolicyWonk.EnforceTest do
   #----------------------------------------------------------------------------
   test "call_policy_error calls policy handlers", %{conn: conn} do
     conn = Enforce.call_policy_error([ModA], conn, "err_generic")
-    assert conn.assigns.errd == "err_generic"
+    assert conn.assigns.errp == "err_generic"
   end
 
   #----------------------------------------------------------------------------

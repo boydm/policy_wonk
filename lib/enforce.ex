@@ -34,7 +34,7 @@ defmodule PolicyWonk.Enforce do
   def call(conn, opts) do
     # get the policy handling modules
     handlers = []
-      |> Utils.append_truthy( opts[:policy_handler] )
+      |> Utils.append_truthy( opts[:handler] )
       |> Utils.append_truthy( Utils.get_exists(conn, [:private, :phoenix_controller]) )
       |> Utils.append_truthy( @config_policies )
       |> Utils.append_truthy( Utils.get_exists(conn, [:private, :phoenix_router]) )

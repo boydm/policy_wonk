@@ -1,5 +1,5 @@
 defmodule PolicyWonkTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   use PolicyWonk
   doctest PolicyWonk
 

@@ -1,5 +1,5 @@
 defmodule PolicyWonk.LoadResourceTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias PolicyWonk.LoadResource
   doctest PolicyWonk
 
@@ -114,7 +114,7 @@ defmodule PolicyWonk.LoadResourceTest do
   end
 
   #----------------------------------------------------------------------------
-  test "call uses policy on (optional) controller", %{conn: conn} do
+  test "call uses loader on (optional) controller", %{conn: conn} do
     opts = %{
         resource_list: [:thing_a],
         loader: nil,
@@ -126,7 +126,7 @@ defmodule PolicyWonk.LoadResourceTest do
   end
 
   #----------------------------------------------------------------------------
-  test "call uses policy on (optional) router", %{conn: conn} do
+  test "call uses loader on (optional) router", %{conn: conn} do
     opts = %{
         resource_list: [:thing_a],
         loader: nil,
@@ -135,6 +135,17 @@ defmodule PolicyWonk.LoadResourceTest do
     conn = Map.put(conn, :private, %{phoenix_router: ModRouter})
     conn = LoadResource.call(conn, opts)
     assert conn.assigns.thing_a == "router_thing_a"
+  end
+
+  #----------------------------------------------------------------------------
+  test "call uses loader set by config", %{conn: conn} do
+    opts = %{
+        resource_list: [:from_config],
+        loader: nil,
+        async: false       # From config
+      }
+    conn = LoadResource.call(conn, opts)
+    assert conn.assigns.from_config == "from_config"
   end
 
 

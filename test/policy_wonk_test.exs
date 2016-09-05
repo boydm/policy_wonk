@@ -1,6 +1,6 @@
 defmodule PolicyWonkTest do
   use ExUnit.Case, async: true
-  use PolicyWonk
+#  use PolicyWonk
   doctest PolicyWonk
 
   # internal policies to test against
@@ -14,18 +14,18 @@ defmodule PolicyWonkTest do
   #============================================================================
   # authorized?
   #----------------------------------------------------------------------------
-  test "authorized? passes if conditions are valid", %{conn: conn} do
-    assert authorized?(conn, :valid) == true
-  end
-
-  #----------------------------------------------------------------------------
-  test "authorized? fails if conditions are invalid", %{conn: conn} do
-    assert authorized?(conn, :invalid) == false
-  end
-
-  #----------------------------------------------------------------------------
-  test "authorized? uses the config policies", %{conn: conn} do
-    assert authorized?(conn, :from_config) == true
-  end
+#  test "authorized? passes if conditions are valid", %{conn: conn} do
+#    assert authorized?(conn, :valid) == true
+#  end
+#
+#  #----------------------------------------------------------------------------
+#  test "authorized? fails if conditions are invalid", %{conn: conn} do
+#    assert authorized?(conn, :invalid) == false
+#  end
+#
+#  #----------------------------------------------------------------------------
+#  test "authorized? uses the config policies", %{conn: conn} do
+#    assert authorized?(conn, :from_config) == true
+#  end
 
 end

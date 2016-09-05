@@ -17,33 +17,37 @@ defmodule PolicyWonk.UtilsTest do
 
 
   #============================================================================
-  # call_into_list
+  # call_down_list
 
   #----------------------------------------------------------------------------
-  test "call_into_list calls handlers in right order" do
-    assert Utils.call_into_list([ModA,ModB], &(&1.thingy(:generic)) ) == "generic_a"
-    assert Utils.call_into_list([ModB,ModA], &(&1.thingy(:generic)) ) == "generic_b"
+  test "call_down_list calls handlers in right order" do
+    assert Utils.call_down_list([ModA,ModB], &(&1.thingy(:generic)) ) == "generic_a"
+    assert Utils.call_down_list([ModB,ModA], &(&1.thingy(:generic)) ) == "generic_b"
   end
 
   #----------------------------------------------------------------------------
-  test "call_into_list calls handlers skips nil handlers" do
-    assert Utils.call_into_list([nil,ModA,ModB], &(&1.thingy(:generic)) ) == "generic_a"
+  test "call_down_list calls handlers skips nil handlers" do
+    assert Utils.call_down_list([nil,ModA,ModB], &(&1.thingy(:generic)) ) == "generic_a"
   end
 
   #----------------------------------------------------------------------------
-  test "call_into_list finds handlers down the list" do
-    assert Utils.call_into_list([nil,ModA,nil,ModB], &(&1.thingy(:specific_a)) ) == "specific_a"
-    assert Utils.call_into_list([nil,ModA,nil,ModB], &(&1.thingy(:specific_b)) ) == "specific_b"
+  test "call_down_list finds handlers down the list" do
+    assert Utils.call_down_list([nil,ModA,nil,ModB], &(&1.thingy(:specific_a)) ) == "specific_a"
+    assert Utils.call_down_list([nil,ModA,nil,ModB], &(&1.thingy(:specific_b)) ) == "specific_b"
   end
 
   #----------------------------------------------------------------------------
-  test "call_into_list returns :not_found on missing function" do
-    assert Utils.call_into_list([nil,ModA,nil,ModB], &(&1.missing(:generic)) ) == :not_found
+  test "call_down_list throws :not_found on missing function" do
+    assert catch_throw(
+      Utils.call_down_list([nil,ModA,nil,ModB], &(&1.missing(:generic)) )
+    ) == :not_found
   end
 
   #----------------------------------------------------------------------------
-  test "call_into_list returns :not_found on missing match" do
-    assert Utils.call_into_list([nil,ModA,nil,ModB], &(&1.thingy(:missing)) ) == :not_found
+  test "call_down_list throws :not_found on missing match" do
+    assert catch_throw(
+      Utils.call_down_list([nil,ModA,nil,ModB], &(&1.thingy(:missing)) )
+    ) == :not_found
   end
 
 
@@ -112,4 +116,46 @@ defmodule PolicyWonk.UtilsTest do
   test "get_exists returns nil if a sub map doesn't exist" do
     assert Utils.get_exists(@get_exists_map, [:missing, :two]) == nil
   end
+
+  #============================================================================
+  # get_exists
+  @phoenix_conn %{
+    private: %{
+      phoenix_controller: :controller,
+      phoenix_router:     :router,
+      phoenix_action:     :action
+    }
+  }
+
+  #----------------------------------------------------------------------------
+  test "controller_module works" do
+    assert Utils.controller_module(@phoenix_conn) == :controller
+  end
+
+  #----------------------------------------------------------------------------
+  test "controller_module returns nil if missing" do
+    assert Utils.controller_module(@get_exists_map) == nil
+  end
+
+  #----------------------------------------------------------------------------
+  test "action_name works" do
+    assert Utils.action_name(@phoenix_conn) == :action
+  end
+
+  #----------------------------------------------------------------------------
+  test "action_name returns nil if missing" do
+    assert Utils.action_name(@get_exists_map) == nil
+  end
+
+  #----------------------------------------------------------------------------
+  test "router_module works" do
+    assert Utils.router_module(@phoenix_conn) == :router
+  end
+
+  #----------------------------------------------------------------------------
+  test "router_module returns nil if missing" do
+    assert Utils.router_module(@get_exists_map) == nil
+  end
+
+
 end

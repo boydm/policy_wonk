@@ -40,16 +40,23 @@ defmodule PolicyWonk.Policy do
 
 
   #===========================================================================
+  def init(%{policies: []}), do: init_empty_policies_error()
   def init(%{policies: policies, handler: handler})
-                            when is_list(policies) and is_atom(handler) do
+                            when is_list(policies) and is_atom(handler), do:
     %{policies: policies, handler: handler}
-  end
   def init(%{policies: policies, handler: handler}) when is_atom(handler), do:
     init( %{policies: [policies], handler: handler} )
+  def init(%{policies: policies}), do: init( policies )
   def init(policies) when is_list(policies), do:
     init( %{policies: policies, handler: nil} )
   def init(policy), do:
     init( %{policies: [policy], handler: nil} )
+  def init([]), do: init_empty_policies_error()
+  #--------------------------------------------------------
+  defp init_empty_policies_error() do
+    msg = "PolicyWonk.Policy requires at least one policy reference"
+    raise %PolicyWonk.Policy{ message: msg }
+  end
 
 
   #----------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 defmodule PolicyWonk.Test.Policies do
   def policy(conn, :from_config) do
-    {:ok, Plug.Conn.assign(conn, :found, "from_config")}
+    :ok
   end
 
   def policy_error(conn, "config_err") do

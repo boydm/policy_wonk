@@ -1,4 +1,4 @@
-defmodule PolicyWonk.PolicyAction do
+defmodule PolicyWonk.EnforceAction do
   alias PolicyWonk.Utils
 
   defexception [message:
@@ -16,12 +16,12 @@ defmodule PolicyWonk.PolicyAction do
   #----------------------------------------------------------------------------
   def call(conn, opts) do
     handler = case (opts.handler || Utils.controller_module(conn)) do
-      nil -> raise PolicyWonk.PolicyAction
+      nil -> raise PolicyWonk.EnforceAction
       handler -> handler
     end
 
     action = case Utils.action_name(conn) do
-      nil -> raise PolicyWonk.PolicyAction
+      nil -> raise PolicyWonk.EnforceAction
       action -> action
     end
 
@@ -31,7 +31,7 @@ defmodule PolicyWonk.PolicyAction do
     }
 
     # evaluate the policy
-    PolicyWonk.Policy.call(conn, opts)
+    PolicyWonk.Enforce.call(conn, opts)
   end # def call
 
 end

@@ -1,6 +1,6 @@
-defmodule PolicyWonk.PolicyTest do
+defmodule PolicyWonk.EnforceTest do
   use ExUnit.Case, async: true
-  alias PolicyWonk.Policy
+  alias PolicyWonk.Enforce
   doctest PolicyWonk
 
 #  import IEx
@@ -29,7 +29,7 @@ defmodule PolicyWonk.PolicyTest do
   # init
   #----------------------------------------------------------------------------
   test "init sets up full options" do
-    assert Policy.init(%{
+    assert Enforce.init(%{
       policies: [:a,:b],
       handler: ModA,
       invalid: "invalid"
@@ -38,37 +38,37 @@ defmodule PolicyWonk.PolicyTest do
 
   #----------------------------------------------------------------------------
   test "init handles policies only partial opts" do
-    assert Policy.init(%{
+    assert Enforce.init(%{
       policies: [:a,:b]
     }) == %{policies: [:a,:b], handler: nil}
   end
 
   #----------------------------------------------------------------------------
   test "init sets single policy into opts" do
-    assert Policy.init(:policy_name) == 
+    assert Enforce.init(:policy_name) == 
       %{policies: [:policy_name], handler: nil}
   end
 
   #----------------------------------------------------------------------------
   test "init sets single policy (in opts) into a list" do
-    assert Policy.init(%{policies: :a}) == 
+    assert Enforce.init(%{policies: :a}) == 
       %{policies: [:a], handler: nil}
   end
 
   #----------------------------------------------------------------------------
   test "init sets policy list into opts" do
-    assert Policy.init([:policy_a, :policy_b]) == 
+    assert Enforce.init([:policy_a, :policy_b]) == 
       %{policies: [:policy_a, :policy_b], handler: nil}
   end
 
   #----------------------------------------------------------------------------
   test "init raises on empty policies in opts" do
-    assert_raise PolicyWonk.Policy, fn -> Policy.init(%{policies: []}) end
+    assert_raise PolicyWonk.Enforce, fn -> Enforce.init(%{policies: []}) end
   end
 
   #----------------------------------------------------------------------------
   test "init raises on empty policies list" do
-    assert_raise PolicyWonk.Policy, fn -> Policy.init([]) end
+    assert_raise PolicyWonk.Enforce, fn -> Enforce.init([]) end
   end
 
 
@@ -82,33 +82,33 @@ defmodule PolicyWonk.PolicyTest do
   #----------------------------------------------------------------------------
   test "call uses policy on global (config) policies module", %{conn: conn} do
     opts = %{handler: nil, policies: [:from_config]}
-    Policy.call(conn, opts)
+    Enforce.call(conn, opts)
   end
 
   #----------------------------------------------------------------------------
   test "call uses policy on the requested module - generic conn", %{conn: conn} do
     opts = %{handler: ModA, policies: [:suceeds_a]}
-    Policy.call(conn, opts)
+    Enforce.call(conn, opts)
   end
 
   #----------------------------------------------------------------------------
   test "call uses policy on (optional) controller", %{conn: conn} do
     opts = %{handler: nil, policies: [:suceeds_c]}
     conn = Map.put(conn, :private, %{phoenix_controller: ModController})
-    Policy.call(conn, opts)
+    Enforce.call(conn, opts)
   end
 
   #----------------------------------------------------------------------------
   test "call uses policy on (optional) router", %{conn: conn} do
     opts = %{handler: nil, policies: [:suceeds_r]}
     conn = Map.put(conn, :private, %{phoenix_router: ModRouter})
-    Policy.call(conn, opts)
+    Enforce.call(conn, opts)
   end
 
   #----------------------------------------------------------------------------
   test "call handles errors after policy failures", %{conn: conn} do
     opts = %{handler: ModA, policies: [:fails]}
-    conn = Policy.call(conn, opts)
+    conn = Enforce.call(conn, opts)
     assert conn.assigns.errp == "failed_policy"
   end
 
@@ -119,23 +119,23 @@ defmodule PolicyWonk.PolicyTest do
 
   #----------------------------------------------------------------------------
   test "evaluate_policies calls policy handlers", %{conn: conn} do
-    assert Policy.evaluate_policies([ModA], conn, [:suceeds_a]) == :ok
+    assert Enforce.evaluate_policies([ModA], conn, [:suceeds_a]) == :ok
   end
 
   #----------------------------------------------------------------------------
   test "evaluate_policies returns error data", %{conn: conn} do
-    assert Policy.evaluate_policies([ModA], conn, [:fails]) == "failed_policy"
+    assert Enforce.evaluate_policies([ModA], conn, [:fails]) == "failed_policy"
   end
 
   #----------------------------------------------------------------------------
   test "evaluate_policies skips nil handlers", %{conn: conn} do
-    assert Policy.evaluate_policies([nil, ModA], conn, [:suceeds_a]) == :ok
+    assert Enforce.evaluate_policies([nil, ModA], conn, [:suceeds_a]) == :ok
   end
 
   #----------------------------------------------------------------------------
   test "evaluate_policies raises if policy not found", %{conn: conn} do
-    assert_raise PolicyWonk.Policy, fn ->
-      Policy.evaluate_policies([ModA], conn, [:missing])
+    assert_raise PolicyWonk.Enforce, fn ->
+      Enforce.evaluate_policies([ModA], conn, [:missing])
     end
   end
 

@@ -1,6 +1,6 @@
 defmodule PolicyWonk.LoadResourceTest do
   use ExUnit.Case, async: true
-  alias PolicyWonk.Loader
+  alias PolicyWonk.LoadResource
   doctest PolicyWonk
 
 #  import IEx
@@ -60,7 +60,7 @@ defmodule PolicyWonk.LoadResourceTest do
   # init
   #----------------------------------------------------------------------------
   test "init accepts a full opts map" do
-    assert Loader.init(%{loaders: [:something_to_load], handler: "handler", async: true}) ==
+    assert LoadResource.init(%{loaders: [:something_to_load], handler: "handler", async: true}) ==
       %{
         loaders: [:something_to_load],
         handler: "handler",
@@ -70,7 +70,7 @@ defmodule PolicyWonk.LoadResourceTest do
 
   #----------------------------------------------------------------------------
   test "init accepts a partial map of loaders" do
-    assert Loader.init(%{loaders: [:something_to_load, :another_to_load]}) ==
+    assert LoadResource.init(%{loaders: [:something_to_load, :another_to_load]}) ==
       %{
         loaders: [:something_to_load, :another_to_load],
         handler: nil,
@@ -80,7 +80,7 @@ defmodule PolicyWonk.LoadResourceTest do
 
   #----------------------------------------------------------------------------
   test "init accepts a partial map of loaders and handler" do
-    assert Loader.init(%{loaders: [:something_to_load], handler: "handler"}) ==
+    assert LoadResource.init(%{loaders: [:something_to_load], handler: "handler"}) ==
       %{
         loaders: [:something_to_load],
         handler: "handler",
@@ -90,7 +90,7 @@ defmodule PolicyWonk.LoadResourceTest do
 
   #----------------------------------------------------------------------------
   test "init accepts a partial map of loaders and async" do
-    assert Loader.init(%{loaders: [:something_to_load], async: true}) ==
+    assert LoadResource.init(%{loaders: [:something_to_load], async: true}) ==
       %{
         loaders: [:something_to_load],
         handler: nil,
@@ -100,7 +100,7 @@ defmodule PolicyWonk.LoadResourceTest do
 
   #----------------------------------------------------------------------------
   test "init accepts a loader list" do
-    assert Loader.init([:something_to_load, :another_to_load]) ==
+    assert LoadResource.init([:something_to_load, :another_to_load]) ==
       %{
         loaders: [:something_to_load, :another_to_load],
         handler: nil,
@@ -110,7 +110,7 @@ defmodule PolicyWonk.LoadResourceTest do
 
   #----------------------------------------------------------------------------
   test "init converts single loader into a loader list" do
-    assert Loader.init(:something_to_load) ==
+    assert LoadResource.init(:something_to_load) ==
       %{
         loaders: [:something_to_load],
         handler: nil,
@@ -134,7 +134,7 @@ defmodule PolicyWonk.LoadResourceTest do
         handler: ModA,
         async: false       # From config
       }
-    conn = Loader.call(conn, opts)
+    conn = LoadResource.call(conn, opts)
     assert conn.assigns.thing_a == "thing_a"
     assert conn.assigns.thing_b == "thing_b"
   end
@@ -146,7 +146,7 @@ defmodule PolicyWonk.LoadResourceTest do
         handler: ModA,
         async: true       # From config
       }
-    conn = Loader.call(conn, opts)
+    conn = LoadResource.call(conn, opts)
     assert conn.assigns.thing_a == "thing_a"
     assert conn.assigns.thing_b == "thing_b"
   end
@@ -159,7 +159,7 @@ defmodule PolicyWonk.LoadResourceTest do
         async: false       # From config
       }
     conn = Map.put(conn, :private, %{phoenix_controller: ModController})
-    conn = Loader.call(conn, opts)
+    conn = LoadResource.call(conn, opts)
     assert conn.assigns.thing_a == "controller_thing_a"
   end
 
@@ -171,7 +171,7 @@ defmodule PolicyWonk.LoadResourceTest do
         async: false       # From config
       }
     conn = Map.put(conn, :private, %{phoenix_router: ModRouter})
-    conn = Loader.call(conn, opts)
+    conn = LoadResource.call(conn, opts)
     assert conn.assigns.thing_a == "router_thing_a"
   end
 
@@ -182,7 +182,7 @@ defmodule PolicyWonk.LoadResourceTest do
         handler: nil,
         async: false       # From config
       }
-    conn = Loader.call(conn, opts)
+    conn = LoadResource.call(conn, opts)
     assert conn.assigns.from_config == "from_config"
   end
 
@@ -194,7 +194,7 @@ defmodule PolicyWonk.LoadResourceTest do
         handler: ModA,
         async: true       # From config
       }
-    conn = Loader.call(conn, opts)
+    conn = LoadResource.call(conn, opts)
     assert conn.status == 404
   end
 

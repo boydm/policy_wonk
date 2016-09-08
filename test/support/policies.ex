@@ -1,5 +1,7 @@
 defmodule PolicyWonk.Test.Policies do
-  def policy(conn, :from_config) do
+  @behaviour PolicyWonk.Policy
+
+  def policy(_conn, :from_config) do
     :ok
   end
 

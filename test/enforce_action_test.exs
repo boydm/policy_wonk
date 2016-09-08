@@ -1,6 +1,6 @@
-defmodule PolicyWonk.PolicyActionTest do
+defmodule PolicyWonk.EnforceActionTest do
   use ExUnit.Case, async: true
-  alias PolicyWonk.PolicyAction
+  alias PolicyWonk.EnforceAction
   doctest PolicyWonk
 
   defmodule ModA do
@@ -20,17 +20,17 @@ defmodule PolicyWonk.PolicyActionTest do
   # init
   #----------------------------------------------------------------------------
   test "init setup up correctly with no parameters" do
-    assert PolicyAction.init() == %{handler: nil}
+    assert EnforceAction.init() == %{handler: nil}
   end
 
   #----------------------------------------------------------------------------
   test "init accepts a handler override" do
-    assert PolicyAction.init(ModA) == %{handler: ModA}
+    assert EnforceAction.init(ModA) == %{handler: ModA}
   end
 
   #----------------------------------------------------------------------------
   test "init handles [] as nil" do
-    assert PolicyAction.init([]) == %{handler: nil}
+    assert EnforceAction.init([]) == %{handler: nil}
   end
 
 
@@ -47,7 +47,7 @@ defmodule PolicyWonk.PolicyActionTest do
       :private,
       %{phoenix_controller: ModController, phoenix_action: :index}
     )
-    PolicyAction.call(conn, %{handler: nil})
+    EnforceAction.call(conn, %{handler: nil})
   end
 
   #----------------------------------------------------------------------------
@@ -56,13 +56,13 @@ defmodule PolicyWonk.PolicyActionTest do
       :private,
       %{phoenix_controller: ModController, phoenix_action: :index}
     )
-    PolicyAction.call(conn, %{handler: ModA})
+    EnforceAction.call(conn, %{handler: ModA})
   end
 
   #----------------------------------------------------------------------------
   test "call raises if there is no phoenix_action", %{conn: conn} do
-    assert_raise PolicyWonk.PolicyAction, fn ->
-      PolicyAction.call(conn, %{handler: nil})
+    assert_raise PolicyWonk.EnforceAction, fn ->
+      EnforceAction.call(conn, %{handler: nil})
     end
   end
 
@@ -72,8 +72,8 @@ defmodule PolicyWonk.PolicyActionTest do
       :private,
       %{phoenix_controller: ModController, phoenix_action: :missing}
     )
-    assert_raise PolicyWonk.Policy, fn ->
-      PolicyAction.call(conn, %{handler: nil})
+    assert_raise PolicyWonk.Enforce, fn ->
+      EnforceAction.call(conn, %{handler: nil})
     end
   end
 

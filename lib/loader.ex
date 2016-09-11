@@ -70,8 +70,44 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
 
 """
 
+  @doc """
+  Define a loader.
 
+  ## parameters
+  * `conn`, the current conn in the plug chain. For informational purposes.
+  * `loader`, The loader you requested with invoking the plug
+  * `params`, the `params` field from the current `conn`. Passed in as a convenience. Useful for parsing and matching against.
+          def load_resource( _conn, :user, %{"id" => user_id} ) do
+            case Repo.get(Account.User, user_id) do
+              nil ->  {:error, "User not found"}
+              user -> {:ok, user}
+            end
+          end
+
+  ## Returns
+  * `{:ok, resource}` If the load succeeds, return the loaded resource in a tuple with :ok
+  * `{:error, error_data}` If the load fails, return any error data you want with :error in a tuple
+  """
   defcallback load_resource(Plug.Conn.t, atom, Map.t) :: {:ok, any} | {:error, any}
+
+  @doc """
+  Define a load error handler.
+
+  ## parameters
+  * `conn`, the current conn in the plug chain. Transform this to handle the error.
+  * `error_data`, the `error_data` returned from your load_resource function.
+
+          def load_error(conn, err_data) do
+            conn
+            |> put_status(404)
+            |> put_view(MyApp.ErrorView)
+            |> render("404.html")
+            |> halt()
+          end
+    
+  ## Returns
+  * `conn`, return the transformed `conn`, which will be used in the plug chain..
+  """
   defcallback load_error(Plug.Conn.t, any) :: Plug.Conn.t
 
 end

@@ -1,17 +1,67 @@
 defmodule PolicyWonk do
 @moduledoc """
-## Summary
 
-PolicyWonk is a lightweight authorization tool for use with any Plug or Phoenix application.
-Tools such as comeonin or Guardian are mostly about authentication. PolicyWonk is about
-authorization, which is deciding what a user can do after they’ve been authenticated.
+A lightweight authorization and resource loading tool for use with any Plug or Phoenix application.
 
-PolicyWonk provides two main plugs. One loads resources into the conn's assigns map. The other
-evaluates policies against those resources and decides if the action can be taken.
+## Examples
 
-It is important that these are both implented as plugs. That way, authorization decisions
-can be made before controller actions are called. It also means loaders and policies can
-be used from your router, before the controller is even chosen.
+In a router:
+
+      pipeline :browser_session do
+        plug PolicyWonk.LoadResource, :current_user
+        plug PolicyWonk.Enforce, :current_user
+      end
+      
+      pipeline :admin do
+        plug PolicyWonk.Enforce, {:user_permission, "admin"}
+      end
+
+In a controller:
+
+      plug PolicyWonk.Enforce, {:user_permission, "admin_content"}
+      plug PolicyWonk.EnforceAction
+
+## Authentication vs. Authorization
+
+
+[Authentication (Auth-N)](https://en.wikipedia.org/wiki/Authentication) is the process of proving that a user or other entity is who/what it claims to be. Tools such as comeonin or Guardian are mostly about authentication. Any time you are checking hashes or passwords, you are doing Auth-N.
+
+[Authorization (Auth-Z)](https://en.wikipedia.org/wiki/Authorization) is the process of deciding what a user/entity is allowed to do _after_ they’ve been authenticated. For example, the plug Guardian.Plug.EnsureAuthenticated is a form of authorization. It makes sure a user is signed in, but doesn’t do the math to actually sign them in.
+
+Authorization ranges from simple (ensuring somebody is logged in), to very rich (make sure the user has specific permissions to see a resource or that the resource is correctly related to the other resources being manipulated).
+
+# Plugs
+
+PolicyWonk provides three main plugs.
+
+* `PolicyWonk.LoadResource` loads resources into the conn's assigns map. 
+* `PolicyWonk.Enforce` evaluates a specified policy. It either continues or halts the plug chain depending on the policy result.
+* `PolicyWonk.EnforceAction` evaluates a policy for each incoming controller action in Phoenix.
+
+Decisions are made before controller actions are called, isolating authorization logic, encouraging policy re-use, and reducing the odds of messing Auth-Z up as you develop your controllers.
+
+# Behaviours
+
+PolicyWonk defines two behaviours for policies and resource loaders.
+
+* `PolicyWonk.Policy` Callbacks for a defining a policy and handling policy failures.
+* `PolicyWonk.Loader` Callbacks for defining a resource loader and handing load failures.
+
+You should look at the `PolicyWonk.Policy` documentation.
+
+# Configuration
+
+There are several parameters you can set in the `policy_wonk` configuration block.
+
+    config :policy_wonk, PolicyWonk,
+      policies:           MyApp.Policies,
+      loaders:            MyApp.Loaders,
+      load_async:         true
+
+### Parameters
+* `policies` Module containing your centralized `policy` functions. Can also be a list of modules. Default is `nil`.
+* `loaders` Module containing your centralized `load_resource` functions. Can also be a list of modules. Default is `nil`.
+* `load_async` Boolean value indicating if multiple resources in a single `plug PolicyWonk.LoadResources` invocation should be loaded asynchronously. Default is `false`. Recommend you set `false` for your tests, `true` elsewhere.
 
 """
 end

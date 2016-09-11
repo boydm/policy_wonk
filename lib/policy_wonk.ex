@@ -49,6 +49,12 @@ PolicyWonk defines two behaviours for creating policies and resource loaders.
 
 You should look at the `PolicyWonk.Policy` documentation.
 
+# Policies outside plugs
+
+In addition to evaluating policies in a plug chain, you will often want to test a policy when rendering ui, acting in a controller, or somewhere else.
+
+`PolicyWonk.Enforce` offers an `authorized?` function just for that purpose. [The documentation ](PolicyWonk.Enforce.html#summary)explains how to use it along with some handy syntatic sugar. 
+
 # Configuration
 
 There are several parameters you can set in the `policy_wonk` configuration block.

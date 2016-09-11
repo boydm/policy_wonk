@@ -112,30 +112,11 @@ defmodule PolicyWonk.EnforceTest do
     assert conn.assigns.errp == "failed_policy"
   end
 
-
-
-  #============================================================================
-  # evaluate_policies
-
   #----------------------------------------------------------------------------
-  test "evaluate_policies calls policy handlers", %{conn: conn} do
-    assert Enforce.evaluate_policies([ModA], conn, [:suceeds_a]) == :ok
-  end
-
-  #----------------------------------------------------------------------------
-  test "evaluate_policies returns error data", %{conn: conn} do
-    assert Enforce.evaluate_policies([ModA], conn, [:fails]) == "failed_policy"
-  end
-
-  #----------------------------------------------------------------------------
-  test "evaluate_policies skips nil handlers", %{conn: conn} do
-    assert Enforce.evaluate_policies([nil, ModA], conn, [:suceeds_a]) == :ok
-  end
-
-  #----------------------------------------------------------------------------
-  test "evaluate_policies raises if policy not found", %{conn: conn} do
+  test "call raises if policy not found", %{conn: conn} do
+    opts = %{handler: ModA, policies: [:missing]}
     assert_raise PolicyWonk.Enforce.PolicyError, fn ->
-      Enforce.evaluate_policies([ModA], conn, [:missing])
+      Enforce.call(conn, opts)
     end
   end
 

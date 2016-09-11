@@ -33,11 +33,11 @@ PolicyWonk.Enforce docs here
 
   #===========================================================================
   #------------------------------------------------------------------------
-  def authorized?(handler, conn = %Plug.Conn{}, policies), do:
-    authorized?(handler, conn.assigns, policies)
-  def authorized?(handler, data, policies) when is_list(policies) do
+  def authorized?(module, conn = %Plug.Conn{}, policies), do:
+    authorized?(module, conn.assigns, policies)
+  def authorized?(module, data, policies) when is_list(policies) do
     handlers = []
-      |> Utils.append_truthy( handler )
+      |> Utils.append_truthy( module )
       |> Utils.append_truthy( @config_policies )
 
     case evaluate_policies(handlers, data, policies) do
@@ -45,8 +45,8 @@ PolicyWonk.Enforce docs here
       _   -> false
     end
   end
-  def authorized?(handler, data, policy), do:
-    authorized?(handler, data, [policy])
+  def authorized?(module, data, policy), do:
+    authorized?(module, data, [policy])
 
 
   #===========================================================================
@@ -91,13 +91,13 @@ PolicyWonk.Enforce docs here
 
 
   #----------------------------------------------------------------------------
-  def evaluate_policies(handlers, assigns, policies ) do
+  defp evaluate_policies(handlers, data, policies ) do
     handlers = Enum.uniq(handlers)
     policies = Enum.uniq(policies)
     # Enumerate through all the policies. Fail if any fail
     Enum.reduce_while( policies, :ok, fn(policy, _acc) ->
       #case handler.Enforce( conn, policy ) do
-      case call_policy( handlers, assigns, policy ) do
+      case call_policy( handlers, data, policy ) do
         :ok ->      {:cont, :ok}
         err_data -> {:halt, err_data }
       end

@@ -1,13 +1,20 @@
 defmodule PolicyWonk.LoadResource do
   alias PolicyWonk.Utils
 
+@moduledoc """
+PolicyWonk.LoadResource docs here
+"""
+
+
   @config_loaders Application.get_env(:policy_wonk, PolicyWonk)[:loaders]
   @config_async   Application.get_env(:policy_wonk, PolicyWonk)[:load_async]
 
 
   #===========================================================================
   # define a policy error here - not found or something like that
-  defexception [message: "#{IO.ANSI.red}Unable to execute a loader\n"]
+  defmodule ResourceError do
+    defexception [message: "#{IO.ANSI.red}Unable to execute a loader\n"]
+  end
 
 
   #===========================================================================
@@ -101,7 +108,7 @@ defmodule PolicyWonk.LoadResource do
           "#{IO.ANSI.green}In any of the following modules...#{IO.ANSI.yellow}\n" <>
           Utils.build_handlers_msg( handlers ) <>
           IO.ANSI.red
-        raise %PolicyWonk.LoadResource{ message: msg }
+        raise %PolicyWonk.LoadResource.ResourceError{ message: msg }
     end
   end
 
@@ -120,7 +127,7 @@ defmodule PolicyWonk.LoadResource do
           "#{IO.ANSI.green}In any of the following modules...#{IO.ANSI.yellow}\n" <>
           Utils.build_handlers_msg( handlers ) <>
           IO.ANSI.red
-        raise %PolicyWonk.LoadResource{ message: msg }
+        raise %PolicyWonk.LoadResource.ResourceError{ message: msg }
     end
   end
 

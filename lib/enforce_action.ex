@@ -1,9 +1,16 @@
 defmodule PolicyWonk.EnforceAction do
+
+@moduledoc """
+PolicyWonk.EnforceAction docs here
+"""
+
   alias PolicyWonk.Utils
 
-  defexception [message:
-    "ActionPolicy must be plugged within a Phoenix controller\n"
-  ]
+  defmodule ControllerRequired do
+    defexception [message:
+      "ActionPolicy must be plugged within a Phoenix controller\n"
+    ]
+  end
 
   #----------------------------------------------------------------------------
   # explicitly setting the handler is optional
@@ -16,12 +23,12 @@ defmodule PolicyWonk.EnforceAction do
   #----------------------------------------------------------------------------
   def call(conn, opts) do
     handler = case (opts.handler || Utils.controller_module(conn)) do
-      nil -> raise PolicyWonk.EnforceAction
+      nil -> raise PolicyWonk.EnforceAction.ControllerRequired
       handler -> handler
     end
 
     action = case Utils.action_name(conn) do
-      nil -> raise PolicyWonk.EnforceAction
+      nil -> raise PolicyWonk.EnforceAction.ControllerRequired
       action -> action
     end
 

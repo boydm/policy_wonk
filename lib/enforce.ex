@@ -1,5 +1,13 @@
 defmodule PolicyWonk.Enforce do
+
+
+@moduledoc """
+PolicyWonk.Enforce docs here
+"""
+
   alias PolicyWonk.Utils
+
+
 
   @config_policies Application.get_env(:policy_wonk, PolicyWonk)[:policies]
 
@@ -18,7 +26,9 @@ defmodule PolicyWonk.Enforce do
 
   #===========================================================================
   # define a policy error here - not found or something like that
-  defexception [message: "#{IO.ANSI.red}Unable to execute a policy\n"]
+  defmodule PolicyError do
+    defexception [message: "#{IO.ANSI.red}Unable to execute a policy\n"]
+  end
 
 
   #===========================================================================
@@ -52,7 +62,7 @@ defmodule PolicyWonk.Enforce do
   #--------------------------------------------------------
   defp init_empty_policies_error() do
     msg = "PolicyWonk.Enforce requires at least one policy reference"
-    raise %PolicyWonk.Enforce{ message: msg }
+    raise %PolicyWonk.Enforce.PolicyError{ message: msg }
   end
 
 
@@ -110,7 +120,7 @@ defmodule PolicyWonk.Enforce do
           "#{IO.ANSI.green}In any of the following modules...#{IO.ANSI.yellow}\n" <>
           Utils.build_handlers_msg( handlers ) <>
           IO.ANSI.red
-        raise %PolicyWonk.Enforce{ message: msg }
+        raise %PolicyWonk.Enforce.PolicyError{ message: msg }
     end
   end
 
@@ -129,7 +139,7 @@ defmodule PolicyWonk.Enforce do
           "#{IO.ANSI.green}In any of the following modules...#{IO.ANSI.yellow}\n" <>
           Utils.build_handlers_msg( handlers ) <>
           IO.ANSI.red
-        raise %PolicyWonk.Enforce{ message: msg }
+        raise %PolicyWonk.Enforce.PolicyError{ message: msg }
     end
   end
 

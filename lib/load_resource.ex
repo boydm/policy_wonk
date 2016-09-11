@@ -32,7 +32,7 @@ PolicyWonk.LoadResource docs here
   end
   def init(%{loaders: loader} = opts), do: init( Map.put(opts, :loaders, [loader]) )
   def init(loaders) when is_list(loaders), do: init( %{loaders: loaders} )
-  def init(loader), do: init( %{loaders: [loader]} )
+  def init(loader), do: init( %{loaders: [loader], async: false} )
 
 
   #----------------------------------------------------------------------------

@@ -24,11 +24,11 @@ In a controller:
 ## Authentication vs. Authorization
 
 
-[Authentication (Auth-N)](https://en.wikipedia.org/wiki/Authentication) is the process of proving that a user or other entity is who/what it claims to be. Tools such as comeonin or Guardian are mostly about authentication. Any time you are checking hashes or passwords, you are doing Auth-N.
+[Authentication (Auth-N)](https://en.wikipedia.org/wiki/Authentication) is the process of proving that a user or other entity is who/what it claims to be. Tools such as [comeonin](https://hex.pm/packages/comeonin) or [guardian](https://hex.pm/packages/guardian) are mostly about authentication. Any time you are checking hashes or passwords, you are doing Auth-N.
 
-[Authorization (Auth-Z)](https://en.wikipedia.org/wiki/Authorization) is the process of deciding what a user/entity is allowed to do _after_ they’ve been authenticated. For example, the plug Guardian.Plug.EnsureAuthenticated is a form of authorization. It makes sure a user is signed in, but doesn’t do the math to actually sign them in.
+[Authorization (Auth-Z)](https://en.wikipedia.org/wiki/Authorization) is the process of deciding what a user/entity is allowed to do _after_ they’ve been authenticated.
 
-Authorization ranges from simple (ensuring somebody is logged in), to very rich (make sure the user has specific permissions to see a resource or that the resource is correctly related to the other resources being manipulated).
+Authorization ranges from simple (ensuring somebody is logged in), to very rich (make sure the user has specific permissions to see a resource or that one resource is correctly related to the other resources being manipulated).
 
 # Plugs
 
@@ -42,7 +42,7 @@ Decisions are made before controller actions are called, isolating authorization
 
 # Behaviours
 
-PolicyWonk defines two behaviours for policies and resource loaders.
+PolicyWonk defines two behaviours for creating policies and resource loaders.
 
 * `PolicyWonk.Policy` Callbacks for a defining a policy and handling policy failures.
 * `PolicyWonk.Loader` Callbacks for defining a resource loader and handing load failures.
@@ -61,7 +61,7 @@ There are several parameters you can set in the `policy_wonk` configuration bloc
 ### Parameters
 * `policies` Module containing your centralized `policy` functions. Can also be a list of modules. Default is `nil`.
 * `loaders` Module containing your centralized `load_resource` functions. Can also be a list of modules. Default is `nil`.
-* `load_async` Boolean value indicating if multiple resources in a single `plug PolicyWonk.LoadResources` invocation should be loaded asynchronously. Default is `false`. Recommend you set `false` for your tests, `true` elsewhere.
+* `load_async` Boolean value indicating that multiple resources in a single `PolicyWonk.LoadResources` invocation should be loaded asynchronously. Default is `false`. Recommend you set `false` for your tests, `true` elsewhere.
 
 """
 end

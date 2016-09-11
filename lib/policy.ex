@@ -15,7 +15,7 @@ A policy is a function that makes a simple yes/no decision.
         end
       end
  
-The *only* way to indicate success from a policy is to return the atom `:ok`. Anything else is a policy failure. (see below)
+The *only* way to indicate success from a policy is to return the atom `:ok`. [Anything else is a policy failure](#module-policy-failures).
 
 The first parameter `Map` of the resources being evaluated. When called by a plug, this is the assigns map from the current `%Plug.Conn{}`. The second parameter is the policy data you specified when using the PolicyWonk.Enforce plug. If you used EnforceAction, then the second parameter is simply the atom representing the current action.
 
@@ -73,7 +73,7 @@ In general, when you invoke the `PolicyWonk.Enforce` or `PolicyWonk.EnforceActio
 
 This creates a form of policy inheritance/polymorphism. The controller (or router) calling the plug always has the authoritative say in what policy to use.
 
-You can also specify the policy’s module when you invoke the `PolicyWonk.Enforce` or `PolicyWonk.EnforceAction` plugs. This will be the only module the plug looks for a policy in.
+You can also specify the policy’s module when you invoke the Enforce or EnforceAction plugs. This will be the only module the plug looks for a policy in.
 
 """
 

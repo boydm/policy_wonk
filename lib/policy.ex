@@ -3,7 +3,7 @@ defmodule PolicyWonk.Policy do
 
 @moduledoc """
 
-To keep authorization logic organized, PolicyWonk uses policy functions that you create either in your controllers or in a central location.
+To keep authorization logic organized, PolicyWonk uses policy functions that you create either in your controllers, router, or a central location.
 
 A policy is a function that makes a simple yes/no decision.
 
@@ -69,11 +69,11 @@ When a policy is used in a single controller, then it should be defined on that 
 
 If a policy is used in multiple locations, then you should define it in a central policies.ex file that you refer to in your configuration data.
 
-In general, when you invoke the `PolicyWonk.Enforce` or `PolicyWonk.EnforceAction` plugs, they detect if the incoming is being processed by a Phoenix controller or router. It looks in the appropriate controller or router for a matching policy first. If it doesn’t find one, it then looks in policy module specified in the configuration block.
+In general, when you invoke the `PolicyWonk.Enforce` or `PolicyWonk.EnforceAction` plugs, they detect if the incoming `conn` is being processed by a Phoenix controller or router. It looks in the appropriate controller or router for a matching policy first. If it doesn’t find one, it then looks in policy module specified in the configuration block.
 
 This creates a form of policy inheritance/polymorphism. The controller (or router) calling the plug always has the authoritative say in what policy to use.
 
-You can also specify the policy’s module when you invoke the Enforce or EnforceAction plugs. This will be the only module the plug looks for a policy in.
+You can also specify the policy’s module when you invoke the `PolicyWonk.Enforce` or `PolicyWonk.EnforceAction` plugs. This will be the only module the plug looks for a policy in.
 
 """
 

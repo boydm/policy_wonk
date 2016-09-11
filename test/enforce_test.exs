@@ -63,12 +63,12 @@ defmodule PolicyWonk.EnforceTest do
 
   #----------------------------------------------------------------------------
   test "init raises on empty policies in opts" do
-    assert_raise PolicyWonk.Enforce, fn -> Enforce.init(%{policies: []}) end
+    assert_raise PolicyWonk.Enforce.PolicyError, fn -> Enforce.init(%{policies: []}) end
   end
 
   #----------------------------------------------------------------------------
   test "init raises on empty policies list" do
-    assert_raise PolicyWonk.Enforce, fn -> Enforce.init([]) end
+    assert_raise PolicyWonk.Enforce.PolicyError, fn -> Enforce.init([]) end
   end
 
 
@@ -134,7 +134,7 @@ defmodule PolicyWonk.EnforceTest do
 
   #----------------------------------------------------------------------------
   test "evaluate_policies raises if policy not found", %{conn: conn} do
-    assert_raise PolicyWonk.Enforce, fn ->
+    assert_raise PolicyWonk.Enforce.PolicyError, fn ->
       Enforce.evaluate_policies([ModA], conn, [:missing])
     end
   end

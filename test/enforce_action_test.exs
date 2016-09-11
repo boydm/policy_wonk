@@ -61,7 +61,7 @@ defmodule PolicyWonk.EnforceActionTest do
 
   #----------------------------------------------------------------------------
   test "call raises if there is no phoenix_action", %{conn: conn} do
-    assert_raise PolicyWonk.EnforceAction, fn ->
+    assert_raise PolicyWonk.EnforceAction.ControllerRequired, fn ->
       EnforceAction.call(conn, %{handler: nil})
     end
   end
@@ -72,7 +72,7 @@ defmodule PolicyWonk.EnforceActionTest do
       :private,
       %{phoenix_controller: ModController, phoenix_action: :missing}
     )
-    assert_raise PolicyWonk.Enforce, fn ->
+    assert_raise PolicyWonk.Enforce.PolicyError, fn ->
       EnforceAction.call(conn, %{handler: nil})
     end
   end

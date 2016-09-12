@@ -7,19 +7,19 @@ defmodule PolicyWonk.LoadResourceTest do
 
   defmodule ModA do
     def load_resource(_conn, :thing_a, _params) do
-      {:ok, "thing_a"}
+      {:ok, :thing_a, "thing_a"}
     end
     def load_resource(_conn, :thing_b, _params) do
-      {:ok, "thing_b"}
+      {:ok, :thing_b, "thing_b"}
     end
     def load_resource(_conn, :invalid, _params) do
-      {:error, "invalid"}
+      "invalid"
     end
     def load_resource(_conn, :bad_wolf, _params) do
-      {:error, "bad_wolf"}
+      "bad_wolf"
     end
     def load_resource(_conn, %{name: name}, _params) do
-      {:ok, {:named_resource, name}}
+      {:ok, :named_resource, name}
     end
 
 
@@ -32,13 +32,13 @@ defmodule PolicyWonk.LoadResourceTest do
 
   defmodule ModController do
     def load_resource(_conn, :thing_a, _params) do
-      {:ok, "controller_thing_a"}
+      {:ok, :thing_a, "controller_thing_a"}
     end
   end
 
   defmodule ModRouter do
     def load_resource(_conn, :thing_a, _params) do
-      {:ok, "router_thing_a"}
+      {:ok, :thing_a, "router_thing_a"}
     end
   end
 

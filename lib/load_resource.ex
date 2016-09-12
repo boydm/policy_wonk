@@ -67,14 +67,14 @@ PolicyWonk.LoadResource docs here
     # wait for the async tasks to complete - assigning each into the conn
     Enum.reduce_while( load_tasks, conn, fn ({loader, task}, acc_conn )->
       case Task.await(task) do
-        {:ok, {name, resource}} when is_atom(name) ->
+        {:ok, name, resource} when is_atom(name) ->
           {:cont, Plug.Conn.assign(acc_conn, name, resource)}
-        {:ok, resource} ->
-          {:cont, Plug.Conn.assign(acc_conn, loader, resource)}
-        {:error, err_data} ->
+#        {:ok, resource} ->
+#          {:cont, Plug.Conn.assign(acc_conn, loader, resource)}
+        err_data ->
           {:halt, call_loader_error(modules, conn, err_data)}
         _ ->
-          raise "load_resource must return either {:ok, resource} or {:error, err_data}"
+          raise "load_resource must return either {:ok. :resource_name, resource} or err_data"
       end
     end)
   end
@@ -83,14 +83,14 @@ PolicyWonk.LoadResource docs here
   defp sync_loader(modules, conn, loaders) do
     Enum.reduce_while( loaders, conn, fn (loader, acc_conn )->
       case call_loader(modules, acc_conn, loader) do
-        {:ok, {name, resource}} when is_atom(name) ->
+        {:ok, name, resource} when is_atom(name) ->
           {:cont, Plug.Conn.assign(acc_conn, name, resource)}
-        {:ok, resource} ->
-          {:cont, Plug.Conn.assign(acc_conn, loader, resource)}
+#        {:ok, resource} ->
+#          {:cont, Plug.Conn.assign(acc_conn, loader, resource)}
         {:error, err_data} ->
           {:halt, call_loader_error(modules, acc_conn, err_data)}
         _ ->
-          raise "load_resource must return either {:ok, resource} or {:error, err_data}"
+          raise "load_resource must return either {:ok, :resource_name, resource} or err_data"
       end
     end)
   end

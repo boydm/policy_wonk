@@ -2,7 +2,36 @@ defmodule PolicyWonk.LoadResource do
   alias PolicyWonk.Utils
 
 @moduledoc """
-PolicyWonk.LoadResource docs here
+
+This the resource loading plug.
+
+## Loading Resources
+
+In order to evaluate policies, you need to have resources loaded into memory first.
+
+In a plug stack, code is run before your controller’s actions, so you need to use `PolicyWonk.LoadResource` (or equivalent) to load resources into the conn’s `assigns` field before running the `PolicyWonk.Enforce` plug.
+
+In a controller… 
+
+In a router…
+
+    pipeline :browser_session do
+      plug PolicyWonk.LoadResource, :current_user
+      plug PolicyWonk.Enforce, :current_user
+    end
+
+The result is that your `:current_user` loader function is called. If it succeeds, it returns a resource (assumedly the current user…), which `PolicyWonk.LoadResource` adds to the conn’s `assigns` field
+
+Please see documentation for `PolicyWonk.Loader` to see how to implement your loaders.
+
+## Specifying loaders
+
+Like policies, sometimes you want more control. 
+
+## Synchronous vs. Ascynchronous loading
+
+
+
 """
 
 

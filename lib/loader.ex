@@ -9,24 +9,22 @@ A `load_resource` function attempts to load a given resource into memory and ret
 
     def load_resource( _conn, :user, %{"id" => user_id} ) do
       case Repo.get(Account.User, user_id) do
-        nil ->  {:error, "User not found"}
-        user -> {:ok, user}
+        nil ->  "User not found"
+        user -> {:ok, :user, user}
       end
     end
  
-The *only* way to indicate success from a load_resource function is to return a tuple such as `{:ok, loaded_resource}`.
+The *only* way to indicate success from a load_resource function is to return a tuple such as `{:ok, :name, loaded_resource}`. The first field must be `:ok` to indicate success. The middle field is the name of the resource as you want it assigned into `conn.assigns` and must be an atom. The last field is the resource itself.
 
-To gracefully handle a load error, return a tuple such as `{:error, error_data}` where error_data is whatever you want to indicate what went wrong. The error_data field will be passed into your load_error function.
-
-The idea is that you define multiple policy functions and use Elixir’s pattern matching to find the right one. If you use a tuple (or a map) as the second parameter, then you can have more complex calls to your loaders.
+The idea is that you define multiple `load_resource` functions and use Elixir’s pattern matching to find the right one. Like policies, this loader name could be an atom, tuple, map or really anything Elixir can match against.
 
 The first parameter is the current `%Plug.Conn{}` and the last is the conn’s `params` field. You are not expected to directly manipulate the conn here. Instead, the plug adds your resource to the conn’s assigns field for you. See [Sychronous vs. Asynchronous Loading](#module-sychronous-vs-asynchronous-loading) for more information.
 
 ## Loader Failures
 
-When a loader returns a tuple such as `{:error, error_data}`, that is a loader failure. 
+To gracefully handle a load error, return anything *other* than the `{:ok, :name, resource}` success tuple. This data will be passed into your `load_error` function.
 
-The LoadResource will then cease attempting to load other resources and call your `load_error(conn, error_data)` function. The `error_data` parameter is the data you specified when you returned the error from your `load_resource` function.
+`PolicyWonk.LoadResource` will then cease attempting to load other resources and call your `load_error(conn, error_data)` function. The `error_data` parameter is what you returned from your `load_resource` function.
 
     def load_error(conn, err_data) do
       conn
@@ -68,6 +66,7 @@ This creates a form of loader inheritance/polymorphism. The controller (or route
 
 You can also specify the loader’s module when you invoke the `PolicyWonk.LoadResource` plug. This will be the only module the plug looks for a `load_resource` function in.
 
+
 """
 
   @doc """
@@ -79,16 +78,16 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
   * `params`, the `params` field from the current `conn`. Passed in as a convenience. Useful for parsing and matching against.
           def load_resource( _conn, :user, %{"id" => user_id} ) do
             case Repo.get(Account.User, user_id) do
-              nil ->  {:error, "User not found"}
-              user -> {:ok, user}
+              nil ->  "User not found"
+              user -> {:ok, :user, user}
             end
           end
 
   ## Returns
-  * `{:ok, resource}` If the load succeeds, return the loaded resource in a tuple with :ok
-  * `{:error, error_data}` If the load fails, return any error data you want with :error in a tuple
+  * `{:ok, :name, resource}` If the load succeeds, return the loaded resource in a tuple with :ok, the resource name as an atom, and the resource itself.
+  * `error_data` If the load fails, return any error data you want
   """
-  defcallback load_resource(Plug.Conn.t, atom, Map.t) :: {:ok, any} | {:error, any}
+  defcallback load_resource(Plug.Conn.t, atom, Map.t) :: {:ok, atom, any} | any
 
   @doc """
   Define a load error module.

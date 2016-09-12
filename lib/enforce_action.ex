@@ -1,7 +1,65 @@
 defmodule PolicyWonk.EnforceAction do
 
 @moduledoc """
-PolicyWonk.EnforceAction docs here
+
+This plug enforces policies for each action in a Phoenix controller.
+
+`PolicyWonk.EnforceAction` must be invoked from within a Phoenix controller. Using it anywhere else will raise the error `PolicyWonk.EnforceAction.ControllerRequired`
+
+## Policy Enforcement
+
+The goal of `PolicyWonk.EnforceAction` is to automatically evaluate a policy for each action in your controller.
+
+      defmodule AdminController do
+        use Phoenix.Controller
+      
+        plug PolicyWonk.EnforceAction
+        
+        . . .
+      end
+
+Is equivalent to…
+
+      defmodule AdminController do
+        use Phoenix.Controller
+      
+        plug PolicyWonk.Enforce, :index  when action in [:index]
+        plug PolicyWonk.Enforce, :show   when action in [:show]
+        plug PolicyWonk.Enforce, :new    when action in [:new]
+        plug PolicyWonk.Enforce, :create when action in [:create]
+        # and so on for all the actions…
+        
+        . . .
+      end
+
+## Use with Guards  
+
+You can use `PolicyWonk.EnforceAction` with action guards
+
+    defmodule AdminController do
+        use Phoenix.Controller
+      
+        plug PolicyWonk.EnforceAction when action in [:index, :show]
+        
+        . . .
+      end
+
+## Specifying the policy module
+
+You do not need to specify a policy module when you use `PolicyWonk.EnforceAction`. It will default to looking for policies in the controller it is invoked from first, then the policy modules in the config block.
+
+*It is recommended to place policies specific to one controller in that controller module.* This keeps your policies nice and organized.
+
+If you do wish to specify a policy module, you can pass that in as a paramter.
+
+      defmodule AdminController do
+        use Phoenix.Controller
+      
+        plug PolicyWonk.EnforceAction, SomeOtherModule
+        
+        . . .
+      end
+
 """
 
   alias PolicyWonk.Utils
@@ -14,6 +72,15 @@ PolicyWonk.EnforceAction docs here
 
   #----------------------------------------------------------------------------
   # explicitly setting the module is optional
+  @doc """
+  Initialize the plug
+
+  The only option for initializing `PolicyWonk.EnforceAction` is to specify the module to look for policies in. Usually left empty.
+
+  ### Parameters
+    * `module` Specify a module for policies. Default is `nil`
+  """
+
   def init( module \\ nil )
   def init( module ) when is_atom(module) do
     %{module: module}

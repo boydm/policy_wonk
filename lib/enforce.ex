@@ -70,7 +70,7 @@ The idea is that you create matching policy functions and rely Elixir’s functi
         :ok
       end
 
-## Controller Actions
+## Use with Guards
 
 When the `PolicyWonk.Enforce` is invoked inside a Phoenix controller, you can add guards against the current action.
 
@@ -127,7 +127,6 @@ The second, prettier, way is to call `use PolicyWonk.Enforce` in any modules whe
      end
 
 Both forms of `authorized?` simulate the policy finding found in the plug.
-
 """
 
   alias PolicyWonk.Utils

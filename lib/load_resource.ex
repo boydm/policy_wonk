@@ -67,6 +67,8 @@ PolicyWonk.LoadResource docs here
     # wait for the async tasks to complete - assigning each into the conn
     Enum.reduce_while( load_tasks, conn, fn ({loader, task}, acc_conn )->
       case Task.await(task) do
+        {:ok, {name, resource}} when is_atom(name) ->
+          {:cont, Plug.Conn.assign(acc_conn, name, resource)}
         {:ok, resource} ->
           {:cont, Plug.Conn.assign(acc_conn, loader, resource)}
         {:error, err_data} ->
@@ -81,6 +83,8 @@ PolicyWonk.LoadResource docs here
   defp sync_loader(modules, conn, loaders) do
     Enum.reduce_while( loaders, conn, fn (loader, acc_conn )->
       case call_loader(modules, acc_conn, loader) do
+        {:ok, {name, resource}} when is_atom(name) ->
+          {:cont, Plug.Conn.assign(acc_conn, name, resource)}
         {:ok, resource} ->
           {:cont, Plug.Conn.assign(acc_conn, loader, resource)}
         {:error, err_data} ->

@@ -18,6 +18,10 @@ defmodule PolicyWonk.LoadResourceTest do
     def load_resource(_conn, :bad_wolf, _params) do
       {:error, "bad_wolf"}
     end
+    def load_resource(_conn, %{name: name}, _params) do
+      {:ok, {:named_resource, name}}
+    end
+
 
     def load_error( conn, "invalid" ) do
       conn
@@ -118,6 +122,15 @@ defmodule PolicyWonk.LoadResourceTest do
       }
   end
 
+  #----------------------------------------------------------------------------
+  test "init accepts a complex loader name" do
+    assert LoadResource.init(%{name: "test_name"}) ==
+      %{
+        loaders: [%{name: "test_name"}],
+        module: nil,
+        async: false       # From config
+      }
+  end
 
 
   #============================================================================
@@ -149,6 +162,26 @@ defmodule PolicyWonk.LoadResourceTest do
     conn = LoadResource.call(conn, opts)
     assert conn.assigns.thing_a == "thing_a"
     assert conn.assigns.thing_b == "thing_b"
+  end
+
+  #----------------------------------------------------------------------------
+  test "call loads complex named resources  (async: true)", %{conn: conn} do
+    opts = %{
+        loaders: [%{name: "test_name"}],
+        module: ModA, async: true
+      }
+    conn = LoadResource.call(conn, opts)
+    assert conn.assigns.named_resource == "test_name"
+  end
+
+  #----------------------------------------------------------------------------
+  test "call loads complex named resources  (async: false)", %{conn: conn} do
+    opts = %{
+        loaders: [%{name: "test_name"}],
+        module: ModA, async: false
+      }
+    conn = LoadResource.call(conn, opts)
+    assert conn.assigns.named_resource == "test_name"
   end
 
   #----------------------------------------------------------------------------

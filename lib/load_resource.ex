@@ -61,38 +61,43 @@ PolicyWonk.LoadResource docs here
   defp async_loader(modules, conn, loaders) do
     # spin up tasks for all the loads
     load_tasks = Enum.map(loaders, fn(loader) ->
-      {loader, Task.async( fn -> call_loader(modules, conn, loader) end)}
+      Task.async( fn -> call_loader(modules, conn, loader) end)
     end)
 
     # wait for the async tasks to complete - assigning each into the conn
-    Enum.reduce_while( load_tasks, conn, fn ({loader, task}, acc_conn )->
-      case Task.await(task) do
-        {:ok, name, resource} when is_atom(name) ->
-          {:cont, Plug.Conn.assign(acc_conn, name, resource)}
-#        {:ok, resource} ->
-#          {:cont, Plug.Conn.assign(acc_conn, loader, resource)}
-        err_data ->
-          {:halt, call_loader_error(modules, conn, err_data)}
-        _ ->
-          raise "load_resource must return either {:ok. :resource_name, resource} or err_data"
-      end
+    Enum.reduce_while( load_tasks, conn, fn (task, acc_conn )->
+      assign_resource(
+        Task.await(task),
+        acc_conn,
+        modules
+      )
     end)
   end
 
   #----------------------------------------------------------------------------
   defp sync_loader(modules, conn, loaders) do
     Enum.reduce_while( loaders, conn, fn (loader, acc_conn )->
-      case call_loader(modules, acc_conn, loader) do
-        {:ok, name, resource} when is_atom(name) ->
-          {:cont, Plug.Conn.assign(acc_conn, name, resource)}
-#        {:ok, resource} ->
-#          {:cont, Plug.Conn.assign(acc_conn, loader, resource)}
-        {:error, err_data} ->
-          {:halt, call_loader_error(modules, acc_conn, err_data)}
-        _ ->
-          raise "load_resource must return either {:ok, :resource_name, resource} or err_data"
-      end
+      assign_resource(
+        call_loader(modules, acc_conn, loader),
+        acc_conn,
+        modules
+      )
     end)
+  end
+
+  #----------------------------------------------------------------------------
+  defp assign_resource(result, conn, modules) do
+    case result do
+      {:ok, name, resource} when is_atom(name) ->
+        {:cont, Plug.Conn.assign(conn, name, resource)}
+      err_data ->
+        {:halt, call_loader_error(modules, conn, err_data)}
+#      _ ->
+#        msg = "#{IO.ANSI.red}load_resource must return either {:ok, :resource_name, resource} or err_data\n" <>
+#          "#{IO.ANSI.green}conn.params: #{IO.ANSI.yellow}#{inspect(conn.params)}\n" <>
+#          "#{IO.ANSI.green}loader: #{IO.ANSI.yellow}#{inspect(loader)}\n"
+#        raise %PolicyWonk.LoadResource.ResourceError{ message: msg }
+    end
   end
 
 
@@ -107,8 +112,8 @@ PolicyWonk.LoadResource docs here
       :not_found ->
         # load_resource wasn't found on any module. raise an error
         msg = "#{IO.ANSI.red}Unable find to a #{IO.ANSI.yellow}load_resource#{IO.ANSI.red} definition for:\n" <>
-          "#{IO.ANSI.green}Params: #{IO.ANSI.yellow}#{inspect(conn.params)}\n" <>
-          "#{IO.ANSI.green}Loader: #{IO.ANSI.yellow}#{inspect(loader)}\n" <>
+          "#{IO.ANSI.green}conn.params: #{IO.ANSI.yellow}#{inspect(conn.params)}\n" <>
+          "#{IO.ANSI.green}loader: #{IO.ANSI.yellow}#{inspect(loader)}\n" <>
           "#{IO.ANSI.green}In any of the following modules...#{IO.ANSI.yellow}\n" <>
           Utils.build_modules_msg( modules ) <>
           IO.ANSI.red

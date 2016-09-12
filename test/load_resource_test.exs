@@ -60,10 +60,10 @@ defmodule PolicyWonk.LoadResourceTest do
   # init
   #----------------------------------------------------------------------------
   test "init accepts a full opts map" do
-    assert LoadResource.init(%{loaders: [:something_to_load], handler: "handler", async: true}) ==
+    assert LoadResource.init(%{loaders: [:something_to_load], module: "module", async: true}) ==
       %{
         loaders: [:something_to_load],
-        handler: "handler",
+        module: "module",
         async: true       # From config
       }
   end
@@ -73,17 +73,17 @@ defmodule PolicyWonk.LoadResourceTest do
     assert LoadResource.init(%{loaders: [:something_to_load, :another_to_load]}) ==
       %{
         loaders: [:something_to_load, :another_to_load],
-        handler: nil,
+        module: nil,
         async: false       # From config
       }
   end
 
   #----------------------------------------------------------------------------
-  test "init accepts a partial map of loaders and handler" do
-    assert LoadResource.init(%{loaders: [:something_to_load], handler: "handler"}) ==
+  test "init accepts a partial map of loaders and module" do
+    assert LoadResource.init(%{loaders: [:something_to_load], module: "module"}) ==
       %{
         loaders: [:something_to_load],
-        handler: "handler",
+        module: "module",
         async: false       # From config
       }
   end
@@ -93,7 +93,7 @@ defmodule PolicyWonk.LoadResourceTest do
     assert LoadResource.init(%{loaders: [:something_to_load], async: true}) ==
       %{
         loaders: [:something_to_load],
-        handler: nil,
+        module: nil,
         async: true       # From config
       }
   end
@@ -103,7 +103,7 @@ defmodule PolicyWonk.LoadResourceTest do
     assert LoadResource.init([:something_to_load, :another_to_load]) ==
       %{
         loaders: [:something_to_load, :another_to_load],
-        handler: nil,
+        module: nil,
         async: false       # From config
       }
   end
@@ -113,7 +113,7 @@ defmodule PolicyWonk.LoadResourceTest do
     assert LoadResource.init(:something_to_load) ==
       %{
         loaders: [:something_to_load],
-        handler: nil,
+        module: nil,
         async: false       # From config
       }
   end
@@ -131,7 +131,7 @@ defmodule PolicyWonk.LoadResourceTest do
   test "call loads the resource into the conn's assigns (async: false)", %{conn: conn} do
     opts = %{
         loaders: [:thing_a, :thing_b],
-        handler: ModA,
+        module: ModA,
         async: false       # From config
       }
     conn = LoadResource.call(conn, opts)
@@ -143,7 +143,7 @@ defmodule PolicyWonk.LoadResourceTest do
   test "call loads the resource into the conn's assigns (async: true)", %{conn: conn} do
     opts = %{
         loaders: [:thing_a, :thing_b],
-        handler: ModA,
+        module: ModA,
         async: true       # From config
       }
     conn = LoadResource.call(conn, opts)
@@ -155,7 +155,7 @@ defmodule PolicyWonk.LoadResourceTest do
   test "call uses loader on (optional) controller", %{conn: conn} do
     opts = %{
         loaders: [:thing_a],
-        handler: nil,
+        module: nil,
         async: false       # From config
       }
     conn = Map.put(conn, :private, %{phoenix_controller: ModController})
@@ -167,7 +167,7 @@ defmodule PolicyWonk.LoadResourceTest do
   test "call uses loader on (optional) router", %{conn: conn} do
     opts = %{
         loaders: [:thing_a],
-        handler: nil,
+        module: nil,
         async: false       # From config
       }
     conn = Map.put(conn, :private, %{phoenix_router: ModRouter})
@@ -179,7 +179,7 @@ defmodule PolicyWonk.LoadResourceTest do
   test "call uses loader set by config", %{conn: conn} do
     opts = %{
         loaders: [:from_config],
-        handler: nil,
+        module: nil,
         async: false       # From config
       }
     conn = LoadResource.call(conn, opts)
@@ -191,7 +191,7 @@ defmodule PolicyWonk.LoadResourceTest do
   test "call handles load errors", %{conn: conn} do
     opts = %{
         loaders: [:invalid],
-        handler: ModA,
+        module: ModA,
         async: true       # From config
       }
     conn = LoadResource.call(conn, opts)

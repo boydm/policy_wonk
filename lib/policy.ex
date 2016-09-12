@@ -45,7 +45,7 @@ Since I use the `{:user_permission, perms}` policy on multiple controllers (and 
 ## Use outside the plug chain
 Policies are usually called from one of the enforce plugs, but can also be used to decide if a user has permission to see a piece of UI and some other thing.
 
-You can evaluate policies within templates, actions, and other code by using the `authorized?` function. See documentation for `PolicyWonk.Enforce` for details.
+You can evaluate policies within templates, actions, and other code by using the `authorized?` function. [See documentation for `PolicyWonk.Enforce` for details](PolicyWonk.Enforce.html#module-evaluating-policies-outside-of-the-plug).
  
 ## Policy Failures
 

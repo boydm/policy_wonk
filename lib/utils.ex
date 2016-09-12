@@ -6,9 +6,9 @@ defmodule PolicyWonk.Utils do
   @spec call_down_list(List.t, function) :: any
   def call_down_list( [], _callback ), do: throw :not_found
   def call_down_list( [nil | tail], callback ), do: call_down_list(tail, callback)
-  def call_down_list( [handler | tail], callback ) when is_function(callback) do
+  def call_down_list( [module | tail], callback ) when is_function(callback) do
     try do
-      callback.( handler )
+      callback.( module )
     rescue
       # if a match wasn't found on the module, try the next in the list
       _e in [UndefinedFunctionError, FunctionClauseError] ->
@@ -19,9 +19,9 @@ defmodule PolicyWonk.Utils do
   end
 
   #----------------------------------------------------------------------------
-  @spec build_handlers_msg(List.t) :: String.t
-  def build_handlers_msg( handlers ) do
-    Enum.reduce(handlers, "", fn(h, acc) ->
+  @spec build_modules_msg(List.t) :: String.t
+  def build_modules_msg( modules ) do
+    Enum.reduce(modules, "", fn(h, acc) ->
       case h do
         nil -> acc
         mod -> acc <> inspect(mod) <> "\n"

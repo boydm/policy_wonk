@@ -91,7 +91,7 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
   defcallback load_resource(Plug.Conn.t, atom, Map.t) :: {:ok, any} | {:error, any}
 
   @doc """
-  Define a load error handler.
+  Define a load error module.
 
   ## parameters
   * `conn`, the current conn in the plug chain. Transform this to handle the error.

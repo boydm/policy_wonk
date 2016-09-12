@@ -26,7 +26,7 @@ PolicyWonk.LoadResource docs here
 
     %{
       loaders: Enum.uniq( loaders ),
-      handler: opts[:handler],
+      module: opts[:module],
       async:  async
     }
   end
@@ -37,31 +37,31 @@ PolicyWonk.LoadResource docs here
 
   #----------------------------------------------------------------------------
   def call(conn, opts) do
-    # figure out what handler to use
-    handler = opts.handler ||
+    # figure out what module to use
+    module = opts.module ||
       Utils.controller_module(conn) ||
       Utils.router_module(conn)
 
-    handlers = []
-      |> Utils.append_truthy( handler )
+    modules = []
+      |> Utils.append_truthy( module )
       |> Utils.append_truthy( @config_loaders )
 
     # evaluate the policies. Cal error func if any fail
     if opts.async do
       # load the resources asynchronously
-      async_loader(handlers, conn, opts.loaders)
+      async_loader(modules, conn, opts.loaders)
     else
       # load the resources synchronously
-      sync_loader(handlers, conn, opts.loaders)
+      sync_loader(modules, conn, opts.loaders)
     end
   end # def call
 
 
   #----------------------------------------------------------------------------
-  defp async_loader(handlers, conn, loaders) do
+  defp async_loader(modules, conn, loaders) do
     # spin up tasks for all the loads
     load_tasks = Enum.map(loaders, fn(loader) ->
-      {loader, Task.async( fn -> call_loader(handlers, conn, loader) end)}
+      {loader, Task.async( fn -> call_loader(modules, conn, loader) end)}
     end)
 
     # wait for the async tasks to complete - assigning each into the conn
@@ -70,7 +70,7 @@ PolicyWonk.LoadResource docs here
         {:ok, resource} ->
           {:cont, Plug.Conn.assign(acc_conn, loader, resource)}
         {:error, err_data} ->
-          {:halt, call_loader_error(handlers, conn, err_data)}
+          {:halt, call_loader_error(modules, conn, err_data)}
         _ ->
           raise "load_resource must return either {:ok, resource} or {:error, err_data}"
       end
@@ -78,13 +78,13 @@ PolicyWonk.LoadResource docs here
   end
 
   #----------------------------------------------------------------------------
-  defp sync_loader(handlers, conn, loaders) do
+  defp sync_loader(modules, conn, loaders) do
     Enum.reduce_while( loaders, conn, fn (loader, acc_conn )->
-      case call_loader(handlers, acc_conn, loader) do
+      case call_loader(modules, acc_conn, loader) do
         {:ok, resource} ->
           {:cont, Plug.Conn.assign(acc_conn, loader, resource)}
         {:error, err_data} ->
-          {:halt, call_loader_error(handlers, acc_conn, err_data)}
+          {:halt, call_loader_error(modules, acc_conn, err_data)}
         _ ->
           raise "load_resource must return either {:ok, resource} or {:error, err_data}"
       end
@@ -93,39 +93,39 @@ PolicyWonk.LoadResource docs here
 
 
   #----------------------------------------------------------------------------
-  defp call_loader( handlers, conn, loader ) do
+  defp call_loader( modules, conn, loader ) do
     try do
-      Utils.call_down_list(handlers, fn(handler) ->
-        handler.load_resource(conn, loader, conn.params)
+      Utils.call_down_list(modules, fn(module) ->
+        module.load_resource(conn, loader, conn.params)
       end)
     catch
       # if a match wasn't found on the module, try the next in the list
       :not_found ->
-        # load_resource wasn't found on any handler. raise an error
+        # load_resource wasn't found on any module. raise an error
         msg = "#{IO.ANSI.red}Unable find to a #{IO.ANSI.yellow}load_resource#{IO.ANSI.red} definition for:\n" <>
           "#{IO.ANSI.green}Params: #{IO.ANSI.yellow}#{inspect(conn.params)}\n" <>
           "#{IO.ANSI.green}Loader: #{IO.ANSI.yellow}#{inspect(loader)}\n" <>
           "#{IO.ANSI.green}In any of the following modules...#{IO.ANSI.yellow}\n" <>
-          Utils.build_handlers_msg( handlers ) <>
+          Utils.build_modules_msg( modules ) <>
           IO.ANSI.red
         raise %PolicyWonk.LoadResource.ResourceError{ message: msg }
     end
   end
 
   #----------------------------------------------------------------------------
-  defp call_loader_error(handlers, conn, err_data ) do
+  defp call_loader_error(modules, conn, err_data ) do
     try do
-      Utils.call_down_list(handlers, fn(handler) ->
-        handler.load_error(conn, err_data)
+      Utils.call_down_list(modules, fn(module) ->
+        module.load_error(conn, err_data)
       end)
     catch
       # if a match wasn't found on the module, try the next in the list
       :not_found ->
-        # load_error wasn't found on any handler. raise an error
+        # load_error wasn't found on any module. raise an error
         msg = "#{IO.ANSI.red}Unable find to a #{IO.ANSI.yellow}load_error#{IO.ANSI.red} definition for...\n" <>
           "#{IO.ANSI.green}err_data: #{IO.ANSI.red}#{inspect(err_data)}\n" <>
           "#{IO.ANSI.green}In any of the following modules...#{IO.ANSI.yellow}\n" <>
-          Utils.build_handlers_msg( handlers ) <>
+          Utils.build_modules_msg( modules ) <>
           IO.ANSI.red
         raise %PolicyWonk.LoadResource.ResourceError{ message: msg }
     end

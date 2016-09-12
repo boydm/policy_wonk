@@ -20,18 +20,18 @@ defmodule PolicyWonk.UtilsTest do
   # call_down_list
 
   #----------------------------------------------------------------------------
-  test "call_down_list calls handlers in right order" do
+  test "call_down_list calls modules in right order" do
     assert Utils.call_down_list([ModA,ModB], &(&1.thingy(:generic)) ) == "generic_a"
     assert Utils.call_down_list([ModB,ModA], &(&1.thingy(:generic)) ) == "generic_b"
   end
 
   #----------------------------------------------------------------------------
-  test "call_down_list calls handlers skips nil handlers" do
+  test "call_down_list calls modules skips nil modules" do
     assert Utils.call_down_list([nil,ModA,ModB], &(&1.thingy(:generic)) ) == "generic_a"
   end
 
   #----------------------------------------------------------------------------
-  test "call_down_list finds handlers down the list" do
+  test "call_down_list finds modules down the list" do
     assert Utils.call_down_list([nil,ModA,nil,ModB], &(&1.thingy(:specific_a)) ) == "specific_a"
     assert Utils.call_down_list([nil,ModA,nil,ModB], &(&1.thingy(:specific_b)) ) == "specific_b"
   end
@@ -52,11 +52,11 @@ defmodule PolicyWonk.UtilsTest do
 
 
   #============================================================================
-  # build_handlers_msg
+  # build_modules_msg
 
   #----------------------------------------------------------------------------
-  test "build_handlers_msg build a string with the names of the handlers" do
-    assert Utils.build_handlers_msg([nil,ModA,nil,ModB]) ==
+  test "build_modules_msg build a string with the names of the modules" do
+    assert Utils.build_modules_msg([nil,ModA,nil,ModB]) ==
       "PolicyWonk.UtilsTest.ModA\nPolicyWonk.UtilsTest.ModB\n"
   end
 

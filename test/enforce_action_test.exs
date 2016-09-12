@@ -20,17 +20,17 @@ defmodule PolicyWonk.EnforceActionTest do
   # init
   #----------------------------------------------------------------------------
   test "init setup up correctly with no parameters" do
-    assert EnforceAction.init() == %{handler: nil}
+    assert EnforceAction.init() == %{module: nil}
   end
 
   #----------------------------------------------------------------------------
-  test "init accepts a handler override" do
-    assert EnforceAction.init(ModA) == %{handler: ModA}
+  test "init accepts a module override" do
+    assert EnforceAction.init(ModA) == %{module: ModA}
   end
 
   #----------------------------------------------------------------------------
   test "init handles [] as nil" do
-    assert EnforceAction.init([]) == %{handler: nil}
+    assert EnforceAction.init([]) == %{module: nil}
   end
 
 
@@ -47,22 +47,22 @@ defmodule PolicyWonk.EnforceActionTest do
       :private,
       %{phoenix_controller: ModController, phoenix_action: :index}
     )
-    EnforceAction.call(conn, %{handler: nil})
+    EnforceAction.call(conn, %{module: nil})
   end
 
   #----------------------------------------------------------------------------
-  test "calls into override handler first", %{conn: conn} do
+  test "calls into override module first", %{conn: conn} do
     conn = Map.put( conn,
       :private,
       %{phoenix_controller: ModController, phoenix_action: :index}
     )
-    EnforceAction.call(conn, %{handler: ModA})
+    EnforceAction.call(conn, %{module: ModA})
   end
 
   #----------------------------------------------------------------------------
   test "call raises if there is no phoenix_action", %{conn: conn} do
     assert_raise PolicyWonk.EnforceAction.ControllerRequired, fn ->
-      EnforceAction.call(conn, %{handler: nil})
+      EnforceAction.call(conn, %{module: nil})
     end
   end
 
@@ -73,7 +73,7 @@ defmodule PolicyWonk.EnforceActionTest do
       %{phoenix_controller: ModController, phoenix_action: :missing}
     )
     assert_raise PolicyWonk.Enforce.PolicyError, fn ->
-      EnforceAction.call(conn, %{handler: nil})
+      EnforceAction.call(conn, %{module: nil})
     end
   end
 

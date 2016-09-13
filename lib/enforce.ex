@@ -82,7 +82,7 @@ If any policy fails, then the `PolicyWonk.Enforce` plug calls your `policy_error
 
 This is where you transform the conn to handle the error gracefully.
 
-## Specifying the policy module
+## Specifying the Policy Module
 
 As discussed in [the documentation for PolicyWonk.Policy](PolicyWonk.Policy.html#module-policy-locations), 
 the `PolicyWonk.Enforce` plug will look for policies first in your controller (or router) as appropriate. Then in the policy module/s specified in the config block.
@@ -127,6 +127,7 @@ The second, prettier, way is to call `use PolicyWonk.Enforce` in any modules whe
      end
 
 Both forms of `authorized?` simulate the policy finding found in the plug.
+
 """
 
   alias PolicyWonk.Utils

@@ -11,26 +11,73 @@ In order to evaluate policies, you need to have resources loaded into memory fir
 
 In a plug stack, code is run before your controller’s actions, so you need to use `PolicyWonk.LoadResource` (or equivalent) to load resources into the conn’s `assigns` field before running the `PolicyWonk.Enforce` plug.
 
-In a controller… 
+In a controller…
 
+    plug PolicyWonk.LoadResource, :thing_a
+    
 In a router…
 
     pipeline :browser_session do
       plug PolicyWonk.LoadResource, :current_user
-      plug PolicyWonk.Enforce, :current_user
     end
 
-The result is that your `:current_user` loader function is called. If it succeeds, it returns a resource (assumedly the current user…), which `PolicyWonk.LoadResource` adds to the conn’s `assigns` field
+The result is that your `:current_user` resource function is called. If it succeeds, it returns a resource (assumedly the current user…), which `PolicyWonk.LoadResource` adds to the conn’s `assigns` field
 
-Please see documentation for `PolicyWonk.Loader` to see how to implement your loaders.
+Please see documentation for `PolicyWonk.resource` to see how to implement your resources.
 
-## Specifying loaders
+## Specifying resources
 
-Like policies, sometimes you want more control. 
+The main parameter to the `PolicyWonk.LoadResource` plug is either a single resource or a list of resources to load.
 
-## Synchronous vs. Ascynchronous loading
+      plug PolicyWonk.LoadResource, :thing_a
+      plug PolicyWonk.LoadResource, [:thing_a, :thing_b]
+
+The “name” of the resource can be pretty much any type you want to pass in to your policy. It doesn’t need to be an atom, although that is very conveninent to match on.
+
+If you specify a list of things to load, then they will each be loaded and added to the plug’s `assigns` field.
+
+These are all valid resource specifiers:
+
+      plug PolicyWonk.LoadResource, [:thing_a, :thing_b]
+      plug PolicyWonk.LoadResource, {:thing_s, "a string")
+      plug PolicyWonk.LoadResource, %{id: "an_id", data: %{color: "blue"}}
+
+The idea is that you create matching `load_resource` functions and rely Elixir’s function matching to select the right one.
+
+      def load_resource( assigns, :thing_a ) do
+        {:ok, :thing_a, "data goes here"}
+      end
+      
+      def load_resource( assigns, {:thing_s, name} ) do
+        {:ok, :thing_name, name}
+      end
+
+## Resource Assignment
+
+When your `load_resource` function succeeds, it returns a tuple in the form of:
+
+`{:ok, :resource_name, resource}`.
+* `:ok` indicates the load succeeded
+* `:resource_name` is any atom you choose to represent the name of the resource. The resource will be added to the conn’s assigns field with this name.
+* `resource` this is the loaded resource itself
+
+In other words, if you return the tuple `{:ok, :name,"policy_wonk"}`, then when `PolicyWonk.LoadResource` is finished doing it’s work, `conn.assigns.name` will be `"policy_wonk"`.
+
+You do not directly add the resource to the conn’s `assigns` field yourself in order to facilitate asyncronous loading. (below)
+
+## Synchronous vs. Asynchronous loading
 
 
+## Use with Guards
+
+When the `PolicyWonk.LoadResource` is invoked inside a Phoenix controller, you can add guards against the current action.
+
+    plug PolicyWonk.LoadResource, :thing_a when action in [:index]
+
+
+## Handling Policy Failures
+
+## Specifying the resource Module
 
 """
 
@@ -42,26 +89,26 @@ Like policies, sometimes you want more control.
   #===========================================================================
   # define a policy error here - not found or something like that
   defmodule ResourceError do
-    defexception [message: "#{IO.ANSI.red}Unable to execute a loader\n"]
+    defexception [message: "#{IO.ANSI.red}Unable to execute a resource\n"]
   end
 
 
   #===========================================================================
-  def init(%{loaders: loaders} = opts) when is_list(loaders) do
+  def init(%{resources: resources} = opts) when is_list(resources) do
     async = case Map.fetch(opts, :async) do
       {:ok, async} -> async
       _ -> @config_async
     end
 
     %{
-      loaders: Enum.uniq( loaders ),
+      resources: Enum.uniq( resources ),
       module: opts[:module],
       async:  async
     }
   end
-  def init(%{loaders: loader} = opts), do: init( Map.put(opts, :loaders, [loader]) )
-  def init(loaders) when is_list(loaders), do: init( %{loaders: loaders} )
-  def init(loader), do: init( %{loaders: [loader], async: false} )
+  def init(%{resources: resource} = opts), do: init( Map.put(opts, :resources, [resource]) )
+  def init(resources) when is_list(resources), do: init( %{resources: resources} )
+  def init(resource), do: init( %{resources: [resource], async: false} )
 
 
   #----------------------------------------------------------------------------
@@ -78,19 +125,19 @@ Like policies, sometimes you want more control.
     # evaluate the policies. Cal error func if any fail
     if opts.async do
       # load the resources asynchronously
-      async_loader(modules, conn, opts.loaders)
+      async_load(modules, conn, opts.resources)
     else
       # load the resources synchronously
-      sync_loader(modules, conn, opts.loaders)
+      sync_load(modules, conn, opts.resources)
     end
   end # def call
 
 
   #----------------------------------------------------------------------------
-  defp async_loader(modules, conn, loaders) do
+  defp async_load(modules, conn, resources) do
     # spin up tasks for all the loads
-    load_tasks = Enum.map(loaders, fn(loader) ->
-      Task.async( fn -> call_loader(modules, conn, loader) end)
+    load_tasks = Enum.map(resources, fn(resource) ->
+      Task.async( fn -> call_loader(modules, conn, resource) end)
     end)
 
     # wait for the async tasks to complete - assigning each into the conn
@@ -104,10 +151,10 @@ Like policies, sometimes you want more control.
   end
 
   #----------------------------------------------------------------------------
-  defp sync_loader(modules, conn, loaders) do
-    Enum.reduce_while( loaders, conn, fn (loader, acc_conn )->
+  defp sync_load(modules, conn, resources) do
+    Enum.reduce_while( resources, conn, fn (resource, acc_conn )->
       assign_resource(
-        call_loader(modules, acc_conn, loader),
+        call_loader(modules, acc_conn, resource),
         acc_conn,
         modules
       )
@@ -124,17 +171,17 @@ Like policies, sometimes you want more control.
 #      _ ->
 #        msg = "#{IO.ANSI.red}load_resource must return either {:ok, :resource_name, resource} or err_data\n" <>
 #          "#{IO.ANSI.green}conn.params: #{IO.ANSI.yellow}#{inspect(conn.params)}\n" <>
-#          "#{IO.ANSI.green}loader: #{IO.ANSI.yellow}#{inspect(loader)}\n"
+#          "#{IO.ANSI.green}resource: #{IO.ANSI.yellow}#{inspect(resource)}\n"
 #        raise %PolicyWonk.LoadResource.ResourceError{ message: msg }
     end
   end
 
 
   #----------------------------------------------------------------------------
-  defp call_loader( modules, conn, loader ) do
+  defp call_loader( modules, conn, resource ) do
     try do
       Utils.call_down_list(modules, fn(module) ->
-        module.load_resource(conn, loader, conn.params)
+        module.load_resource(conn, resource, conn.params)
       end)
     catch
       # if a match wasn't found on the module, try the next in the list
@@ -142,7 +189,7 @@ Like policies, sometimes you want more control.
         # load_resource wasn't found on any module. raise an error
         msg = "#{IO.ANSI.red}Unable find to a #{IO.ANSI.yellow}load_resource#{IO.ANSI.red} definition for:\n" <>
           "#{IO.ANSI.green}conn.params: #{IO.ANSI.yellow}#{inspect(conn.params)}\n" <>
-          "#{IO.ANSI.green}loader: #{IO.ANSI.yellow}#{inspect(loader)}\n" <>
+          "#{IO.ANSI.green}resource: #{IO.ANSI.yellow}#{inspect(resource)}\n" <>
           "#{IO.ANSI.green}In any of the following modules...#{IO.ANSI.yellow}\n" <>
           Utils.build_modules_msg( modules ) <>
           IO.ANSI.red

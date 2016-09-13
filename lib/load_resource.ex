@@ -21,18 +21,18 @@ In a router…
       plug PolicyWonk.LoadResource, :current_user
     end
 
-The result is that your `:current_user` resource function is called. If it succeeds, it returns a resource (assumedly the current user…), which `PolicyWonk.LoadResource` adds to the conn’s `assigns` field
+The result is that your `:current_user` loader function is called. If it succeeds, it returns a resource (assumedly the current user…), which `PolicyWonk.LoadResource` adds to the conn’s `assigns` field
 
-Please see documentation for `PolicyWonk.resource` to see how to implement your resources.
+Please see documentation for `PolicyWonk.Loader` to see how to implement your loaders.
 
-## Specifying resources
+## Specifying Loaders
 
 The main parameter to the `PolicyWonk.LoadResource` plug is either a single resource or a list of resources to load.
 
       plug PolicyWonk.LoadResource, :thing_a
       plug PolicyWonk.LoadResource, [:thing_a, :thing_b]
 
-The “name” of the resource can be pretty much any type you want to pass in to your policy. It doesn’t need to be an atom, although that is very conveninent to match on.
+The “name” of the resource can be pretty much any type you want to pass in to your policy. It doesn’t need to be an atom, although that is very convenient to match on.
 
 If you specify a list of things to load, then they will each be loaded and added to the plug’s `assigns` field.
 
@@ -54,19 +54,32 @@ The idea is that you create matching `load_resource` functions and rely Elixir�
 
 ## Resource Assignment
 
-When your `load_resource` function succeeds, it returns a tuple in the form of:
+When your `load_resource` function succeeds, it should return a tuple in the form of:
 
 `{:ok, :resource_name, resource}`.
 * `:ok` indicates the load succeeded
-* `:resource_name` is any atom you choose to represent the name of the resource. The resource will be added to the conn’s assigns field with this name.
+* `:resource_name` is any atom you choose to represent the name of the resource. The resource will be added to the conn’s `assigns` field with this name.
 * `resource` this is the loaded resource itself
 
 In other words, if you return the tuple `{:ok, :name,"policy_wonk"}`, then when `PolicyWonk.LoadResource` is finished doing it’s work, `conn.assigns.name` will be `"policy_wonk"`.
 
-You do not directly add the resource to the conn’s `assigns` field yourself in order to facilitate asyncronous loading. (below)
+You do not directly add the resource to the conn’s `assigns` field yourself in order to facilitate asynchronous loading. (below)
 
 ## Synchronous vs. Asynchronous loading
 
+One of my favorite parts of working with Elixir is the ease of writing parallel, asynchronous code. Loading a resource from a database, generating hashes, or other operations can often take a measurable amount of time to complete, even though they are not necessarily compute intensive.
+
+If you load all the resources a given web page is going to use one after the other, you will dramatically increase your response times.
+
+`PolicyWonk.LoadResource` helps by (optionally) loading the resources you specify in any given call asynchronously.
+
+    plug PolicyWonk.LoadResource, [:thing_a, :thing_b]
+
+In this case, both `:thing_a` and `:thing_b` are going to hit the database. If the PolicyWonk config block has set load_async to `true`, then they will be loaded in parallel, saving significant time.
+
+You can also request asynchronous loading with the expanded form of the plug invocation.
+
+    plug PolicyWonk.LoadResource, %{resources: [:thing_a, :thing_b], async: true}
 
 ## Use with Guards
 
@@ -75,9 +88,26 @@ When the `PolicyWonk.LoadResource` is invoked inside a Phoenix controller, you c
     plug PolicyWonk.LoadResource, :thing_a when action in [:index]
 
 
-## Handling Policy Failures
+## Handling Load Failures
 
-## Specifying the resource Module
+If any call to a `load_resource` function fails, then the `PolicyWonk.LoadResource` plug calls your `load_error` function with the data returned by the loader.
+
+This is where you transform the conn to handle the error gracefully.
+
+Unlike policies, not every resource failure should halt the plug stack, so calling `Plug.Conn.halt(conn)` is up to you to do in your `load_error` function.
+
+## Specifying the Loader Module
+
+As discussed in [the documentation for PolicyWonk.Loader](PolicyWonk.Loader.html#module-loader-locations), 
+the `PolicyWonk.LoadResource` plug will look for loaders first in your controller (or router) as appropriate. Then in the module/s specified in the config block.
+
+If you are using the plug outside phoenix, then just the config block is checked.
+
+You can also specify exactly which module to look in at the time you invoke the plug.
+
+    plug PolicyWonk.LoadResource, %{resources: [:thing_1], module: MyLoaderModule}
+
+If you do specify the module, then that is the only one `PolicyWonk.Enforce` will look in for loaders.
 
 """
 
@@ -94,6 +124,11 @@ When the `PolicyWonk.LoadResource` is invoked inside a Phoenix controller, you c
 
 
   #===========================================================================
+  @doc """
+  Initialize an invocation of the plug.
+  
+  [See the discussion of specifying loaders above.](PolicyWonk.LoadResource.html#module-specifying-loaders)
+  """
   def init(%{resources: resources} = opts) when is_list(resources) do
     async = case Map.fetch(opts, :async) do
       {:ok, async} -> async
@@ -112,6 +147,9 @@ When the `PolicyWonk.LoadResource` is invoked inside a Phoenix controller, you c
 
 
   #----------------------------------------------------------------------------
+  @doc """
+  Call is used by the plug stack. 
+  """
   def call(conn, opts) do
     # figure out what module to use
     module = opts.module ||

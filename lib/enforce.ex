@@ -91,7 +91,7 @@ If you are using the plug outside phoenix, then just the config block is checked
 
 You can also specify exactly which module to look in at the time you invoke the plug.
 
-    plug PolicyWonk.Enforce, %{policies: [policy_1], module: MyPoliciesModule}
+    plug PolicyWonk.Enforce, %{policies: [:policy_1], module: MyPoliciesModule}
 
 If you do specify the module, then that is the only one `PolicyWonk.Enforce` will look in for policies.
 
@@ -99,7 +99,7 @@ If you do specify the module, then that is the only one `PolicyWonk.Enforce` wil
 
 You will often want to evaluate policies outside of the plug chain. For example, to show only show UI if the user has permssion to see it.
 
-`PolicyWonk.Enforce` provides the `authorized?` API for just this purpose. It evaluates the policy and returns a simple boolean value indicating success for failure.
+`PolicyWonk.Enforce` provides the `authorized?` API for just this purpose. It evaluates the policy and returns a simple boolean value indicating success or failure.
 
 There are two ways to access the `authorized?` API. The first is to call it directly, specifying the module the policies are in.
 

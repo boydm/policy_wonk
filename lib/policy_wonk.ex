@@ -53,7 +53,7 @@ You should look at the `PolicyWonk.Policy` documentation.
 
 In addition to evaluating policies in a plug chain, you will often want to test a policy when rendering ui, acting in a controller, or somewhere else.
 
-`PolicyWonk.Enforce` offers an `authorized?` function just for that purpose. [The documentation ](PolicyWonk.Enforce.html#summary)explains how to use it along with some handy syntatic sugar. 
+`PolicyWonk.Enforce` offers an `authorized?` function just for that purpose. [The documentation ](PolicyWonk.Enforce.html#module-evaluating-policies-outside-of-the-plug)explains how to use it along with some handy syntactic sugar. 
 
 # Configuration
 

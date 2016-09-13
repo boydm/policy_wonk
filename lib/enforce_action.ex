@@ -50,7 +50,7 @@ You do not need to specify a policy module when you use `PolicyWonk.EnforceActio
 
 *It is recommended to place policies specific to one controller in that controller module.* This keeps your policies nice and organized.
 
-If you do wish to specify a policy module, you can pass that in as a paramter.
+If you do wish to specify a policy module, you can pass that in as a parameter.
 
       defmodule AdminController do
         use Phoenix.Controller
@@ -59,7 +59,6 @@ If you do wish to specify a policy module, you can pass that in as a paramter.
         
         . . .
       end
-
 """
 
   alias PolicyWonk.Utils

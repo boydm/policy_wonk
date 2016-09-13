@@ -39,14 +39,14 @@ In a controller:
 
 If any policy returns anything other than `:ok`, then the plug stack is halted and given a chance to exit gracefully.
 
-## Specifiying Policies
+## Specifying Policies
 
 The main parameter to the `PolicyWonk.Enforce` plug is either a single policy or a list of policies.
 
       plug PolicyWonk.Enforce, :policy_1
       plug PolicyWonk.Enforce, [:policy_1, :policy_2]
 
-The “name” of the policy can be pretty much any type you want to pass in to your policy. It doesn’t need to be an atom, although that is very conveninent to match on.
+The “name” of the policy can be pretty much any type you want to pass in to your policy. It doesn’t need to be an atom, although that is very convenient to match on.
 
 These are all valid policy specifiers:
 
@@ -97,7 +97,7 @@ If you do specify the module, then that is the only one `PolicyWonk.Enforce` wil
 
 ## Evaluating Policies Outside of the Plug
 
-You will often want to evaluate policies outside of the plug chain. For example, to show only show UI if the user has permssion to see it.
+You will often want to evaluate policies outside of the plug chain. For example, to show only show UI if the user has permission to see it.
 
 `PolicyWonk.Enforce` provides the `authorized?` API for just this purpose. It evaluates the policy and returns a simple boolean value indicating success or failure.
 
@@ -127,7 +127,6 @@ The second, prettier, way is to call `use PolicyWonk.Enforce` in any modules whe
      end
 
 Both forms of `authorized?` simulate the policy finding found in the plug.
-
 """
 
   alias PolicyWonk.Utils
@@ -190,7 +189,7 @@ Both forms of `authorized?` simulate the policy finding found in the plug.
   @doc """
   Initialize an invocation of the plug.
   
-  [See the discussion of specifying policies above.](PolicyWonk.Enforce.html#module-specifiying-policies)
+  [See the discussion of specifying policies above.](PolicyWonk.Enforce.html#module-specifying-the-policy-module)
   """
 
   def init(%{policies: []}),                  do: init_empty_policies_error()

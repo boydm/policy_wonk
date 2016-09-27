@@ -112,8 +112,8 @@ If you do specify the module, then that is the only one `PolicyWonk.Enforce` wil
 """
 
 
-  @config_loaders Application.get_env(:policy_wonk, PolicyWonk)[:loaders]
-  @config_async   Application.get_env(:policy_wonk, PolicyWonk)[:load_async]
+  #@config_loaders Application.get_env(:policy_wonk, PolicyWonk)[:loaders]
+  #@config_async   Application.get_env(:policy_wonk, PolicyWonk)[:load_async]
 
 
   #===========================================================================
@@ -132,7 +132,7 @@ If you do specify the module, then that is the only one `PolicyWonk.Enforce` wil
   def init(%{resources: resources} = opts) when is_list(resources) do
     async = case Map.fetch(opts, :async) do
       {:ok, async} -> async
-      _ -> @config_async
+      _ -> config_async
     end
 
     %{
@@ -158,7 +158,7 @@ If you do specify the module, then that is the only one `PolicyWonk.Enforce` wil
 
     modules = []
       |> Utils.append_truthy( module )
-      |> Utils.append_truthy( @config_loaders )
+      |> Utils.append_truthy( config_loaders )
 
     # evaluate the policies. Cal error func if any fail
     if opts.async do
@@ -252,6 +252,14 @@ If you do specify the module, then that is the only one `PolicyWonk.Enforce` wil
           IO.ANSI.red
         raise %PolicyWonk.LoadResource.ResourceError{ message: msg }
     end
+  end
+
+  defp config_loaders do
+    Application.get_env(:policy_wonk, PolicyWonk)[:loaders]
+  end
+
+  defp config_async do
+    Application.get_env(:policy_wonk, PolicyWonk)[:load_async]
   end
 
 end

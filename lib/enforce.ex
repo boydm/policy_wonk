@@ -133,7 +133,7 @@ Both forms of `authorized?` simulate the policy finding found in the plug.
 
 
 
-  @config_policies Application.get_env(:policy_wonk, PolicyWonk)[:policies]
+  #@config_policies Application.get_env(:policy_wonk, PolicyWonk)[:policies]
 
 
   #===========================================================================
@@ -174,7 +174,7 @@ Both forms of `authorized?` simulate the policy finding found in the plug.
   def authorized?(module, data, policies) when is_list(policies) do
     modules = []
       |> Utils.append_truthy( module )
-      |> Utils.append_truthy( @config_policies )
+      |> Utils.append_truthy( config_policies )
 
     case evaluate_policies(modules, data, policies) do
       :ok -> true
@@ -221,7 +221,7 @@ Both forms of `authorized?` simulate the policy finding found in the plug.
 
     modules = []
       |> Utils.append_truthy( module )
-      |> Utils.append_truthy( @config_policies )
+      |> Utils.append_truthy( config_policies )
 
     # evaluate the policies. Cal error func if any fail
     case evaluate_policies( modules, conn.assigns, opts.policies ) do
@@ -287,6 +287,11 @@ Both forms of `authorized?` simulate the policy finding found in the plug.
           IO.ANSI.red
         raise %PolicyWonk.Enforce.PolicyError{ message: msg }
     end
+  end
+
+  #----------------------------------------------------------------------------
+  defp config_policies do
+    Application.get_env(:policy_wonk, PolicyWonk)[:policies]
   end
 
 end

@@ -1,8 +1,9 @@
 defmodule PolicyWonk.Mixfile do
   use Mix.Project
 
-  @version "0.1.0"
-  @url "https://github.com/boydm/policy_wonk"
+  @version "0.1.1"
+  @github "https://github.com/boydm/policy_wonk"
+  #@tutorial ""
 
   def project do
     [
@@ -17,11 +18,11 @@ defmodule PolicyWonk.Mixfile do
         contributors: ["Boyd Multerer"],
         maintainers: ["Boyd Multerer"],
         licenses: ["MIT"],
-        links: %{github: @url}
+        links: %{github: @github}
       ],
 
       name: "policy_wonk",
-      source_url: @url,
+      source_url: @github,
       docs: docs(),
       description: """
       Plug based authorization and resource loading.

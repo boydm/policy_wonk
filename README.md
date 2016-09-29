@@ -47,6 +47,10 @@ In a controller:
       plug PolicyWonk.EnforceAction
 
 
+## Tutorial
+
+You can read [a full tutorial on setting up and using policy wonk here](https://medium.com/@boydm/policy-wonk-the-tutorial-6d2b6e435c46#.nqg6cv9ra). 
+
 ## Documentation
 
 You can read [the full documentation here](https://hexdocs.pm/policy_wonk).

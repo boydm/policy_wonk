@@ -3,7 +3,7 @@ defmodule PolicyWonk.Mixfile do
 
   @version "0.1.1"
   @github "https://github.com/boydm/policy_wonk"
-  #@tutorial ""
+  @tutorial "https://medium.com/@boydm/policy-wonk-the-tutorial-6d2b6e435c46#.dz7utkmgb"
 
   def project do
     [
@@ -18,7 +18,7 @@ defmodule PolicyWonk.Mixfile do
         contributors: ["Boyd Multerer"],
         maintainers: ["Boyd Multerer"],
         licenses: ["MIT"],
-        links: %{github: @github}
+        links: %{github: @github, tutorial: @tutorial}
       ],
 
       name: "policy_wonk",

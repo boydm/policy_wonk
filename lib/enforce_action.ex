@@ -111,9 +111,3 @@ If you do wish to specify a policy module, you can pass that in as a parameter.
   end # def call
 
 end
-
-
-#  def action_name(conn), do: conn.private.phoenix_action
-#  def controller_module(conn), do: conn.private.phoenix_controller
-#  def router_module(conn), do: conn.private.phoenix_router
-#  def endpoint_module(conn), do: conn.private.phoenix_endpoint

@@ -44,11 +44,11 @@ These are all valid resource specifiers:
 
 The idea is that you create matching `load_resource` functions and rely Elixir’s function matching to select the right one.
 
-      def load_resource( assigns, :thing_a ) do
+      def load_resource( conn, :thins_a, assigns ) do
         {:ok, :thing_a, "data goes here"}
       end
       
-      def load_resource( assigns, {:thing_s, name} ) do
+      def load_resource( conn, {:thing_s, name}, assigns ) do
         {:ok, :thing_name, name}
       end
 

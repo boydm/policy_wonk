@@ -6,7 +6,7 @@ defmodule PolicyWonk.Utils do
   @spec call_down_list(List.t, function) :: any
   def call_down_list( [], _callback ), do: throw :not_found
   def call_down_list( [nil | tail], callback ), do: call_down_list(tail, callback)
-  def call_down_list( [module | tail], {function, args} ) do
+  def call_down_list( [module | tail], {function, args} ) when is_atom(function) and is_list(args) do
     try do
       apply(module, function, args)
     rescue

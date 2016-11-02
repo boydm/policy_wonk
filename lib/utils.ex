@@ -6,15 +6,20 @@ defmodule PolicyWonk.Utils do
   @spec call_down_list(List.t, function) :: any
   def call_down_list( [], _callback ), do: throw :not_found
   def call_down_list( [nil | tail], callback ), do: call_down_list(tail, callback)
-  def call_down_list( [module | tail], callback ) when is_function(callback) do
+  def call_down_list( [module | tail], {function, args} ) do
     try do
-      callback.( module )
+      apply(module, function, args)
     rescue
-      # if a match wasn't found on the module, try the next in the list
-      _e in [UndefinedFunctionError, FunctionClauseError] ->
-        call_down_list(tail, callback)
-      # some other error. let it raise
-      e -> raise e
+      e in [UndefinedFunctionError, FunctionClauseError] ->
+        arity = length(args)
+        case e do
+          # if a match wasn't found on the module, try the next in the list
+          %{module: ^module, function: ^function, arity: ^arity} ->
+            call_down_list(tail, {function, args})
+          # some other error. let it raise
+          _ ->
+            raise e
+        end
     end
   end
 

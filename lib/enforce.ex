@@ -254,9 +254,7 @@ Both forms of `authorized?` simulate the policy finding found in the plug.
   #----------------------------------------------------------------------------
   defp call_policy( modules, assigns, policy ) do
     try do
-      Utils.call_down_list(modules, fn(module) ->
-        module.policy(assigns, policy)
-      end)
+      Utils.call_down_list(modules, {:policy, [assigns, policy]})
     catch
       # if a match wasn't found on the module, try the next in the list
       :not_found ->
@@ -273,9 +271,7 @@ Both forms of `authorized?` simulate the policy finding found in the plug.
   #----------------------------------------------------------------------------
   defp call_policy_error(modules, conn, err_data ) do
     try do
-      Utils.call_down_list(modules, fn(module) ->
-        module.policy_error(conn, err_data)
-      end)
+      Utils.call_down_list(modules, {:policy_error, [conn, err_data]})
     catch
       # if a match wasn't found on the module, try the next in the list
       :not_found ->

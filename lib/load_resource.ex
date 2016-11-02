@@ -218,9 +218,7 @@ If you do specify the module, then that is the only one `PolicyWonk.Enforce` wil
   #----------------------------------------------------------------------------
   defp call_loader( modules, conn, resource ) do
     try do
-      Utils.call_down_list(modules, fn(module) ->
-        module.load_resource(conn, resource, conn.params)
-      end)
+      Utils.call_down_list(modules, {:load_resource, [conn, resource, conn.params]})
     catch
       # if a match wasn't found on the module, try the next in the list
       :not_found ->
@@ -238,9 +236,7 @@ If you do specify the module, then that is the only one `PolicyWonk.Enforce` wil
   #----------------------------------------------------------------------------
   defp call_loader_error(modules, conn, err_data ) do
     try do
-      Utils.call_down_list(modules, fn(module) ->
-        module.load_error(conn, err_data)
-      end)
+      Utils.call_down_list(modules, {:load_error, [conn, err_data]})
     catch
       # if a match wasn't found on the module, try the next in the list
       :not_found ->

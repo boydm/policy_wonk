@@ -9,6 +9,7 @@ defmodule PolicyWonk.EnforceTest do
     def policy( _assigns, :suceeds_a ),        do: :ok
     def policy( _assigns, %{thing1: _one, thing2: _two} ),        do: :ok
     def policy( _assigns, :fails ),            do: "failed_policy"
+    def policy( _assigns, :raises ),            do: inspect( :something, :bad_argument )
 
     def policy_error(conn, "failed_policy"),  do: Plug.Conn.assign(conn, :errp, "failed_policy")
     def policy_error(_conn, "invalid"),       do: "invalid"
@@ -123,6 +124,14 @@ defmodule PolicyWonk.EnforceTest do
   test "call raises if policy not found", %{conn: conn} do
     opts = %{module: ModA, policies: [:missing]}
     assert_raise PolicyWonk.Enforce.PolicyError, fn ->
+      Enforce.call(conn, opts)
+    end
+  end
+
+  #----------------------------------------------------------------------------
+  test "call surfaces error raised inside policy", %{conn: conn} do
+    opts = %{module: ModA, policies: [:raises]}
+    assert_raise FunctionClauseError, fn ->
       Enforce.call(conn, opts)
     end
   end

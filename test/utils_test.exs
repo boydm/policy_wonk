@@ -21,32 +21,32 @@ defmodule PolicyWonk.UtilsTest do
 
   #----------------------------------------------------------------------------
   test "call_down_list calls modules in right order" do
-    assert Utils.call_down_list([ModA,ModB], &(&1.thingy(:generic)) ) == "generic_a"
-    assert Utils.call_down_list([ModB,ModA], &(&1.thingy(:generic)) ) == "generic_b"
+    assert Utils.call_down_list([ModA,ModB], {:thingy, [:generic]} ) == "generic_a"
+    assert Utils.call_down_list([ModB,ModA], {:thingy, [:generic]} ) == "generic_b"
   end
 
   #----------------------------------------------------------------------------
   test "call_down_list calls modules skips nil modules" do
-    assert Utils.call_down_list([nil,ModA,ModB], &(&1.thingy(:generic)) ) == "generic_a"
+    assert Utils.call_down_list([nil,ModA,ModB], {:thingy, [:generic]} ) == "generic_a"
   end
 
   #----------------------------------------------------------------------------
   test "call_down_list finds modules down the list" do
-    assert Utils.call_down_list([nil,ModA,nil,ModB], &(&1.thingy(:specific_a)) ) == "specific_a"
-    assert Utils.call_down_list([nil,ModA,nil,ModB], &(&1.thingy(:specific_b)) ) == "specific_b"
+    assert Utils.call_down_list([nil,ModA,nil,ModB], {:thingy, [:specific_a]} ) == "specific_a"
+    assert Utils.call_down_list([nil,ModA,nil,ModB], {:thingy, [:specific_b]} ) == "specific_b"
   end
 
   #----------------------------------------------------------------------------
   test "call_down_list throws :not_found on missing function" do
     assert catch_throw(
-      Utils.call_down_list([nil,ModA,nil,ModB], &(&1.missing(:generic)) )
+      Utils.call_down_list([nil,ModA,nil,ModB], {:missing, [:generic]} )
     ) == :not_found
   end
 
   #----------------------------------------------------------------------------
   test "call_down_list throws :not_found on missing match" do
     assert catch_throw(
-      Utils.call_down_list([nil,ModA,nil,ModB], &(&1.thingy(:missing)) )
+      Utils.call_down_list([nil,ModA,nil,ModB], {:thingy, [:missing]} )
     ) == :not_found
   end
 

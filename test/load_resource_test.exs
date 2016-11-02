@@ -21,6 +21,9 @@ defmodule PolicyWonk.LoadResourceTest do
     def load_resource(_conn, %{name: name}, _params) do
       {:ok, :named_resource, name}
     end
+    def load_resource(_conn, :raises, _params) do
+      inspect( :something, :bad_argument )
+    end
 
 
     def load_error( conn, "invalid" ) do
@@ -229,6 +232,18 @@ defmodule PolicyWonk.LoadResourceTest do
       }
     conn = LoadResource.call(conn, opts)
     assert conn.status == 404
+  end
+
+  #----------------------------------------------------------------------------
+  test "call surfaces error raised inside load_resource", %{conn: conn} do
+    opts = %{
+      resources: [:raises],
+      module: ModA,
+      async: false         # From config
+    }
+    assert_raise FunctionClauseError, fn ->
+      LoadResource.call(conn, opts)
+    end
   end
 
 end

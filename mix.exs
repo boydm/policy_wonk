@@ -1,7 +1,7 @@
 defmodule PolicyWonk.Mixfile do
   use Mix.Project
 
-  @version "0.1.2"
+  @version "0.1.3"
   @github "https://github.com/boydm/policy_wonk"
   @tutorial "https://medium.com/@boydm/policy-wonk-the-tutorial-6d2b6e435c46#.dz7utkmgb"
 

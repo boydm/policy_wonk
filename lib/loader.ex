@@ -1,6 +1,4 @@
 defmodule PolicyWonk.Loader do
-  use Behaviour
-
 @moduledoc """
 
 To keep resource loading logic organized, PolicyWonk uses `load_resource` functions that you create either in your controllers, router, or a central location.
@@ -86,7 +84,7 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
   * `{:ok, :name, resource}` If the load succeeds, return the loaded resource in a tuple with :ok, the resource name as an atom, and the resource itself.
   * `error_data` If the load fails, return any error data you want
   """
-  defcallback load_resource(Plug.Conn.t, atom, Map.t) :: {:ok, atom, any} | any
+  @callback load_resource(Plug.Conn.t, atom, Map.t) :: {:ok, atom, any} | any
 
   @doc """
   Define a load error module.
@@ -106,6 +104,6 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
   ## Returns
   * `conn`, return the transformed `conn`, which will be used in the plug chain..
   """
-  defcallback load_error(Plug.Conn.t, any) :: Plug.Conn.t
+  @callback load_error(Plug.Conn.t, any) :: Plug.Conn.t
 
 end

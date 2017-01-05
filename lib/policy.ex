@@ -1,6 +1,4 @@
 defmodule PolicyWonk.Policy do
-  use Behaviour
-
 @moduledoc """
 
 To keep authorization logic organized, PolicyWonk uses policy functions that you create either in your controllers, router, or a central location.
@@ -86,7 +84,7 @@ You can also specify the policy’s module when you invoke the Enforce or Enforc
 
   Returns either `:ok`, or error_data that is passed to your `policy_error` function.
   """
-  defcallback policy(Map.t, any) :: :ok | any
+  @callback policy(Map.t, any) :: :ok | any
 
 
 
@@ -98,6 +96,6 @@ You can also specify the policy’s module when you invoke the Enforce or Enforc
   Must return a conn, which you are free to transform.
   """
 
-  defcallback policy_error(Plug.Conn.t, any) :: Plug.Conn.t
+  @callback policy_error(Plug.Conn.t, any) :: Plug.Conn.t
 
 end

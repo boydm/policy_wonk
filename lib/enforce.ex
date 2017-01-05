@@ -174,7 +174,7 @@ Both forms of `authorized?` simulate the policy finding found in the plug.
   def authorized?(module, data, policies) when is_list(policies) do
     modules = []
       |> Utils.append_truthy( module )
-      |> Utils.append_truthy( config_policies )
+      |> Utils.append_truthy( config_policies() )
 
     case evaluate_policies(modules, data, policies) do
       :ok -> true
@@ -221,7 +221,7 @@ Both forms of `authorized?` simulate the policy finding found in the plug.
 
     modules = []
       |> Utils.append_truthy( module )
-      |> Utils.append_truthy( config_policies )
+      |> Utils.append_truthy( config_policies() )
 
     # evaluate the policies. Cal error func if any fail
     case evaluate_policies( modules, conn.assigns, opts.policies ) do

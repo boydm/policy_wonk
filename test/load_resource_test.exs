@@ -45,23 +45,6 @@ defmodule PolicyWonk.LoadResourceTest do
     end
   end
 
-  @conn_controller %{
-    private: %{
-      phoenix_controller: :controller,
-      phoenix_router:     :router,
-      phoenix_action:     :action
-    }
-  }
-
-  @conn_router %{
-    private: %{
-      phoenix_router:     :router,
-    }
-  }
-
-  @conn_empty %{}
-
-
 
   #============================================================================
   # init

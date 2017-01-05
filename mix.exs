@@ -1,7 +1,7 @@
 defmodule PolicyWonk.Mixfile do
   use Mix.Project
 
-  @version "0.1.3"
+  @version "0.2.0"
   @github "https://github.com/boydm/policy_wonk"
   @tutorial "https://medium.com/@boydm/policy-wonk-the-tutorial-6d2b6e435c46#.dz7utkmgb"
 
@@ -9,7 +9,7 @@ defmodule PolicyWonk.Mixfile do
     [
       app: :policy_wonk,
       version: @version,
-      elixir: "~> 1.3",
+      elixir: "~> 1.4",
       elixirc_paths: elixirc_paths(Mix.env),
       build_embedded: Mix.env == :prod,
       start_permanent: Mix.env == :prod,
@@ -28,6 +28,7 @@ defmodule PolicyWonk.Mixfile do
       Plug based authorization and resource loading.
       Aimed at Phoenix, but depends only on Plug.
       MIT license
+      Updated to compile clean with Elixir 1.4
       """
     ]
   end

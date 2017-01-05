@@ -132,7 +132,7 @@ If you do specify the module, then that is the only one `PolicyWonk.Enforce` wil
   def init(%{resources: resources} = opts) when is_list(resources) do
     async = case Map.fetch(opts, :async) do
       {:ok, async} -> async
-      _ -> config_async
+      _ -> config_async()
     end
 
     %{
@@ -158,7 +158,7 @@ If you do specify the module, then that is the only one `PolicyWonk.Enforce` wil
 
     modules = []
       |> Utils.append_truthy( module )
-      |> Utils.append_truthy( config_loaders )
+      |> Utils.append_truthy( config_loaders() )
 
     # evaluate the policies. Cal error func if any fail
     if opts.async do

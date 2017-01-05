@@ -12,7 +12,7 @@ Add `policy_wonk` to the deps section of your application's `mix.exs` file
 defp deps do
   [
     # ...
-    {:policy_wonk, "~> 0.1"}
+    {:policy_wonk, "~> 0.2"}
     # ...
   ]
 end

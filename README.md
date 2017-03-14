@@ -7,7 +7,7 @@ PolicyWonk is a lightweight authorization and resource loading library for any P
 
 I'm working on changes (as time allows) to make Policy Wonk work well in Phoenix 1.3 umbrella applications. This will probably mean a small number of breaking changes, so may be a major version number bump.
 
-Also re-thinking how to handler errors given Phoenix 1.3's cool new controller actions and how they recover from errors. If you use Policy Wonk and have opinions on how you would like to see this work, this is a good time to make suggestions...
+Also re-thinking error flow given Phoenix 1.3's cool new controller actions and how they recover from errors. If you use Policy Wonk and have opinions on how you would like to see this work, this is a good time to make suggestions...
 
 ## Setup
 

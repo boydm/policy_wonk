@@ -1,6 +1,4 @@
 defmodule PolicyWonk.LoadResource do
-  alias PolicyWonk.Utils
-
 @moduledoc """
 
 This the resource loading plug.
@@ -111,27 +109,33 @@ If you do specify the module, then that is the only one `PolicyWonk.Enforce` wil
 
 """
 
-  @default_otp_app      :policy_wonk
-
-
-  #===========================================================================
-  # define a policy error here - not found or something like that
-  defmodule ResourceError do
-    @moduledoc false
-    defexception [message: "#{IO.ANSI.red}Unable to execute a resource\n"]
-  end
-
-
   #===========================================================================
   # the using macro for loaders adopting this behavioiur
   defmacro __using__(use_opts) do
     quote do
-      @otp_app    unquote(use_opts[:otp_app])
+      def init( resources_or_opts ) do
+        case Keyword.keyword?(resources_or_opts) do
+          true ->
+            resources_or_opts
+            |> Keyword.put_new( :resource_module, unquote(use_opts[:resource_module]) || __MODULE__ )
+            |> Keyword.put_new( :async, unquote(use_opts[:async]) || false )
+            |> PolicyWonk.LoadResource.init()
+          false ->
+            PolicyWonk.LoadResource.init(resource_module: __MODULE__, async: false, resources: resources_or_opts)
+        end
+      end
 
-      def init( opts ),     do: PolicyWonk.LoadResource.do_init( opts, otp_app: @otp_app )
       def call(conn, opts), do: PolicyWonk.LoadResource.call(conn, opts)
     end # quote
   end # defmacro
+
+
+  #===========================================================================
+  # define a policy error here - not found or something like that
+  defmodule Error do
+    @moduledoc false
+    defexception [message: "#{IO.ANSI.red}Load resource failed#{IO.ANSI.default_color()}\n"]
+  end
 
 
   #===========================================================================
@@ -140,158 +144,30 @@ If you do specify the module, then that is the only one `PolicyWonk.Enforce` wil
   
   [See the discussion of specifying loaders above.](PolicyWonk.LoadResource.html#module-specifying-loaders)
   """
-  def init(%{resources: resources} = opts) when is_list(resources) do
-    otp_app = opts[:otp_app] || @default_otp_app
 
-    async = case Map.fetch(opts, :async) do
-      {:ok, async} -> async
-      _ -> config_async()
-    end
+  def init( opts ) when is_list(opts), do: do_init(opts[:resource_module], opts[:resources], opts[:async])
 
+  defp do_init( nil, _, _ ), do: raise Error, message: "#{IO.ANSI.red}Must supply a valid :resource_module#{IO.ANSI.default_color()}"
+  defp do_init( _, [], _ ), do: raise Error, message: "#{IO.ANSI.red}Must supply at least one resource to load#{IO.ANSI.default_color()}"
+
+  defp do_init( resource_module, resources, async ) when is_atom(resource_module) and is_list(resources) do
     %{
-      resources: Enum.uniq( resources ),
-      module: opts[:module],
-      async: async,
-      otp_app: otp_app
+      resource_module: resource_module,
+      resources: resources,
+      async: async
     }
   end
-  def init(%{resources: resource} = opts), do: init( Map.put(opts, :resources, [resource]) )
-  def init(resources) when is_list(resources), do: init( %{resources: resources} )
-  def init(resource), do: init( %{resources: [resource], async: false} )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  #--------------------------------------------------------
-  # next time... offer fewer choices on how to format the options. would make this easier
-  @doc false
-  def do_init(res_opts, opts) when is_map(res_opts),  do: init( Map.put(res_opts, :otp_app, opts[:otp_app]) )
-  def do_init(ress, opts) when is_list(ress),         do: init( %{resources: ress, otp_app: opts[:otp_app]} )
-  def do_init(res, opts), do: init( %{resources: [res], async: false, otp_app: opts[:otp_app]} )
-
+  defp do_init( policy_module, policy, async ) do
+    do_init( policy_module, [policy], async )
+  end
 
   #----------------------------------------------------------------------------
   @doc """
   Call is used by the plug stack. 
   """
-  def call(conn, opts) do
-    # figure out what module to use
-    module = opts.module ||
-      Utils.controller_module(conn) ||
-      Utils.router_module(conn)
-
-    modules = []
-      |> Utils.append_truthy( module )
-      |> Utils.append_truthy( config_loaders() )
-
-    # evaluate the policies. Cal error func if any fail
-    if opts.async do
-      # load the resources asynchronously
-      async_load(modules, conn, opts.resources)
-    else
-      # load the resources synchronously
-      sync_load(modules, conn, opts.resources)
-    end
-  end # def call
-
-
-  #----------------------------------------------------------------------------
-  defp async_load(modules, conn, resources) do
-    # spin up tasks for all the loads
-    load_tasks = Enum.map(resources, fn(resource) ->
-      Task.async( fn -> call_loader(modules, conn, resource) end)
-    end)
-
-    # wait for the async tasks to complete - assigning each into the conn
-    Enum.reduce_while( load_tasks, conn, fn (task, acc_conn )->
-      assign_resource(
-        Task.await(task),
-        acc_conn,
-        modules
-      )
-    end)
-  end
-
-  #----------------------------------------------------------------------------
-  defp sync_load(modules, conn, resources) do
-    Enum.reduce_while( resources, conn, fn (resource, acc_conn )->
-      assign_resource(
-        call_loader(modules, acc_conn, resource),
-        acc_conn,
-        modules
-      )
-    end)
-  end
-
-  #----------------------------------------------------------------------------
-  defp assign_resource(result, conn, modules) do
-    case result do
-      {:ok, name, resource} when is_atom(name) ->
-        {:cont, Plug.Conn.assign(conn, name, resource)}
-      err_data ->
-        {:halt, call_loader_error(modules, conn, err_data)}
-#      _ ->
-#        msg = "#{IO.ANSI.red}load_resource must return either {:ok, :resource_name, resource} or err_data\n" <>
-#          "#{IO.ANSI.green}conn.params: #{IO.ANSI.yellow}#{inspect(conn.params)}\n" <>
-#          "#{IO.ANSI.green}resource: #{IO.ANSI.yellow}#{inspect(resource)}\n"
-#        raise %PolicyWonk.LoadResource.ResourceError{ message: msg }
-    end
-  end
-
-
-  #----------------------------------------------------------------------------
-  defp call_loader( modules, conn, resource ) do
-    try do
-      Utils.call_down_list(modules, {:load_resource, [conn, resource, conn.params]})
-    catch
-      # if a match wasn't found on the module, try the next in the list
-      :not_found ->
-        # load_resource wasn't found on any module. raise an error
-        msg = "#{IO.ANSI.red}Unable find to a #{IO.ANSI.yellow}load_resource#{IO.ANSI.red} definition for:\n" <>
-          "#{IO.ANSI.green}conn.params: #{IO.ANSI.yellow}#{inspect(conn.params)}\n" <>
-          "#{IO.ANSI.green}resource: #{IO.ANSI.yellow}#{inspect(resource)}\n" <>
-          "#{IO.ANSI.green}In any of the following modules...#{IO.ANSI.yellow}\n" <>
-          Utils.build_modules_msg( modules ) <>
-          IO.ANSI.red
-        raise %PolicyWonk.LoadResource.ResourceError{ message: msg }
-    end
-  end
-
-  #----------------------------------------------------------------------------
-  defp call_loader_error(modules, conn, err_data ) do
-    try do
-      Utils.call_down_list(modules, {:load_error, [conn, err_data]})
-    catch
-      # if a match wasn't found on the module, try the next in the list
-      :not_found ->
-        # load_error wasn't found on any module. raise an error
-        msg = "#{IO.ANSI.red}Unable find to a #{IO.ANSI.yellow}load_error#{IO.ANSI.red} definition for...\n" <>
-          "#{IO.ANSI.green}err_data: #{IO.ANSI.red}#{inspect(err_data)}\n" <>
-          "#{IO.ANSI.green}In any of the following modules...#{IO.ANSI.yellow}\n" <>
-          Utils.build_modules_msg( modules ) <>
-          IO.ANSI.red
-        raise %PolicyWonk.LoadResource.ResourceError{ message: msg }
-    end
-  end
-
-  defp config_loaders do
-    Application.get_env(:policy_wonk, PolicyWonk)[:loaders]
-  end
-
-  defp config_async do
-    Application.get_env(:policy_wonk, PolicyWonk)[:load_async]
+  def call(conn, %{policy_module: policy_module, resources: resources, async: async}) do
+    PolicyWonk.Loader.load(conn, policy_module, resources, async)
   end
 
 end

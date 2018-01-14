@@ -129,57 +129,32 @@ The second, prettier, way is to call `use PolicyWonk.Enforce` in any modules whe
 Both forms of `authorized?` simulate the policy finding found in the plug.
 """
 
-  alias PolicyWonk.Utils
-
-  @default_otp_app      :policy_wonk
 
   #===========================================================================
   defmacro __using__(use_opts) do
     quote do
-      @otp_app    unquote(use_opts[:otp_app])
+      def init( policies_or_opts ) do
+        case Keyword.keyword?(policies_or_opts) do
+          true ->
+            policies_or_opts
+            |> Keyword.put_new( :policy_module, unquote(use_opts[:policy_module]) || __MODULE__ )
+            |> PolicyWonk.Enforce.init()
+          false ->
+            PolicyWonk.Enforce.init(policy_module: __MODULE__, policies: policies_or_opts)
+        end
+      end
 
-      def init( opts ),     do: PolicyWonk.Enforce.do_init( opts, otp_app: @otp_app )
       def call(conn, opts), do: PolicyWonk.Enforce.call(conn, opts)
     end # quote
   end # defmacro
 
 
   #===========================================================================
-  # define a policy error here - not found or something like that
-  defmodule PolicyError do
-    defexception [message: "#{IO.ANSI.red}Unable to execute a policy\n"]
+  # define a policy enforcement error here
+  defmodule Error do
+    @moduledoc false
+    defexception [message: "#{IO.ANSI.red}Policy endforcement failed#{IO.ANSI.default_color()}\n"]
   end
-
-
-  #===========================================================================
-  #------------------------------------------------------------------------
-  @doc """
-  Evaluate a policy outside of the plug stack. Returns a simple true/false `boolean` indicating
-  if the policy succeeded or failed. Your `policy_error` function is **not** called in the event of
-  a failure.
-
-  ### Parameters
-    * `module` A module to look for policies in. If nil, on the config policies will be used.
-    * `data` Resource data to passed into your policy. If you pass a `conn` in, then the `assigns` field
-      be extracted and sent to your policy.
-    * `policies` A list of policies to be evaluated. Can also be a single policy.
-  """
-  @spec authorized?(atom, any, List.t | any, List.t) :: boolean
-  def authorized?(module, conn, policies, opts \\ [])
-  def authorized?(module, %Plug.Conn{} = conn, policies, opts), do:
-    authorized?(module, conn.assigns, policies, opts)
-  def authorized?(module, data, policies, opts) when is_list(policies) do
-    modules = []
-      |> Utils.append_truthy( module )
-      |> Utils.append_truthy( config_policies(opts[:otp_app] || @default_otp_app) )
-
-    case evaluate_policies(modules, data, policies) do
-      :ok -> true
-      _   -> false
-    end
-  end
-  def authorized?(module, data, policy, opts), do:
-    authorized?(module, data, [policy], opts)
 
 
   #===========================================================================
@@ -189,121 +164,30 @@ Both forms of `authorized?` simulate the policy finding found in the plug.
   [See the discussion of specifying policies above.](PolicyWonk.Enforce.html#module-specifying-the-policy-module)
   """
 
-  def init(%{policies: []}), do: init_empty_policies_error()
+  def init( opts ) when is_list(opts), do: do_init(opts[:policy_module], opts[:policies])
 
-  # the main init function
-  def init(%{policies: policies} = opts) when is_list(policies) do
+  defp do_init( nil, _ ), do: raise Error, message: "#{IO.ANSI.red}Must supply a valid :policy_module#{IO.ANSI.default_color()}"
+  defp do_init( _, [] ), do: raise Error, message: "#{IO.ANSI.red}Must supply at least one policy to enforce#{IO.ANSI.default_color()}"
+
+  defp do_init( policy_module, policies ) when is_atom(policy_module) and is_list(policies) do
     %{
-      policies:   policies,
-      module:     opts[:module] || nil,
-      otp_app:    opts[:otp_app] || @default_otp_app
+      policy_module: policy_module,
+      policies: policies
     }
   end
 
-  # put the policies into a list
-  def init(%{policies: policies} = opts) do
-    opts
-    |> Map.put(:policies, [policies])
-    |> init()
+  defp do_init( policy_module, policy ) do
+    do_init( policy_module, [policy] )
   end
 
-  # just a policy or policies were passed in a list
-  def init(policies) when is_list(policies),  do: init( %{policies: policies} )
-  def init(policy),                           do: init( %{policies: [policy], module: nil} )
-
-
-  #--------------------------------------------------------
-  defp init_empty_policies_error() do
-    msg = "PolicyWonk.Enforce requires at least one policy reference"
-    raise %PolicyWonk.Enforce.PolicyError{ message: msg }
-  end
-
-  #--------------------------------------------------------
-  @doc false
-  def do_init(pol_opts, opts) when is_map(pol_opts),  do: init( Map.put(pol_opts, :otp_app, opts[:otp_app]))
-  def do_init(policies, opts) when is_list(policies), do: init( %{policies: policies, module: nil, otp_app: opts[:otp_app]} )
-  def do_init(policy, opts),                          do: init( %{policies: [policy], module: nil, otp_app: opts[:otp_app]} )
 
   #----------------------------------------------------------------------------
   #------------------------------------------------------------------------
   @doc """
   Call is used by the plug stack. 
   """
-  def call(conn, opts) do
-    # figure out what module to use
-    module = opts.module ||
-      Utils.controller_module(conn) ||
-      Utils.router_module(conn)
-
-    modules = []
-      |> Utils.append_truthy( module )
-      |> Utils.append_truthy( config_policies(opts[:otp_app]) )
-
-    # evaluate the policies. Cal error func if any fail
-    case evaluate_policies( modules, conn.assigns, opts.policies ) do
-      :ok ->
-        # continue without transforming the conn
-        conn
-      err_data ->
-        # halt the plug chain
-        call_policy_error( modules, conn, err_data )
-        |> Plug.Conn.halt
-    end
-  end # def call
-
-
-  #----------------------------------------------------------------------------
-  defp evaluate_policies(modules, data, policies ) do
-    modules = Enum.uniq(modules)
-    policies = Enum.uniq(policies)
-    # Enumerate through all the policies. Fail if any fail
-    Enum.reduce_while( policies, :ok, fn(policy, _acc) ->
-      #case module.Enforce( conn, policy ) do
-      case call_policy( modules, data, policy ) do
-        :ok ->      {:cont, :ok}
-        err_data -> {:halt, err_data }
-      end
-    end)
-  end
-
-
-  #----------------------------------------------------------------------------
-  defp call_policy( modules, assigns, policy ) do
-    try do
-      Utils.call_down_list(modules, {:policy, [assigns, policy]})
-    catch
-      # if a match wasn't found on the module, try the next in the list
-      :not_found ->
-        # policy wasn't found on any module. raise an error
-        msg = "#{IO.ANSI.red}Unable find to a #{IO.ANSI.yellow}policy#{IO.ANSI.red} definition for:\n" <>
-          "#{IO.ANSI.green}Policy: #{IO.ANSI.yellow}#{inspect(policy)}\n" <>
-          "#{IO.ANSI.green}In any of the following modules...#{IO.ANSI.yellow}\n" <>
-          Utils.build_modules_msg( modules ) <>
-          IO.ANSI.red
-        raise %PolicyWonk.Enforce.PolicyError{ message: msg }
-    end
-  end
-
-  #----------------------------------------------------------------------------
-  defp call_policy_error(modules, conn, err_data ) do
-    try do
-      Utils.call_down_list(modules, {:policy_error, [conn, err_data]})
-    catch
-      # if a match wasn't found on the module, try the next in the list
-      :not_found ->
-        # policy wasn't found on any module. raise an error
-        msg = "#{IO.ANSI.red}Unable find to a #{IO.ANSI.yellow}policy_error#{IO.ANSI.red} definition for...\n" <>
-          "#{IO.ANSI.green}err_data: #{IO.ANSI.red}#{inspect(err_data)}\n" <>
-          "#{IO.ANSI.green}In any of the following modules...#{IO.ANSI.yellow}\n" <>
-          Utils.build_modules_msg( modules ) <>
-          IO.ANSI.red
-        raise %PolicyWonk.Enforce.PolicyError{ message: msg }
-    end
-  end
-
-  #----------------------------------------------------------------------------
-  defp config_policies( otp_app ) do
-    Application.get_env(otp_app, PolicyWonk)[:policies]
+  def call(conn, %{policy_module: policy_module, policies: policies}) do
+    PolicyWonk.Policy.enforce(conn, policy_module, policies)
   end
 
 end

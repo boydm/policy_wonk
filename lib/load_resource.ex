@@ -142,7 +142,13 @@ If you do specify the module, then that is the only one `PolicyWonk.Enforce` wil
   """
 
   #--------------------------------------------------------
-  def init( opts ) when is_list(opts), do: do_init(opts[:resource_module], opts[:resources], opts[:async])
+  def init( opts ) when is_list(opts) do
+    async = case opts[:async] do
+      true -> true
+      _ -> false
+    end
+    do_init(opts[:resource_module], opts[:resources], async)
+  end
 
   #--------------------------------------------------------
   @doc false

@@ -166,8 +166,8 @@ If you do specify the module, then that is the only one `PolicyWonk.Enforce` wil
   @doc """
   Call is used by the plug stack. 
   """
-  def call(conn, %{policy_module: policy_module, resources: resources, async: async}) do
-    PolicyWonk.Loader.load(conn, policy_module, resources, async)
+  def call(conn, %{resource_module: resource_module, resources: resources, async: async}) do
+    PolicyWonk.Loader.load(conn, resource_module, resources, async)
   end
 
 end

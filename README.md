@@ -8,6 +8,8 @@ policy_wonk
 
 PolicyWonk is a lightweight authorization and resource loading library for any Plug or Phoenix application.
 
+You can read [the full documentation here](https://hexdocs.pm/policy_wonk/1.0.0-rc.0).
+
 ## Authentication vs. Authorization
 
 [Authentication (Auth-N)](https://en.wikipedia.org/wiki/Authentication) is the process of proving that a user or other entity is who/what it claims to be. Tools such as [comeonin](https://hex.pm/packages/comeonin) or [guardian](https://hex.pm/packages/guardian) are mostly about authentication. Any time you are checking hashes or passwords, you are doing Auth-N.

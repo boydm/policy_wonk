@@ -8,6 +8,9 @@ policy_wonk
 
 PolicyWonk is a lightweight authorization and resource loading library for any Plug or Phoenix application.
 
+Note: I am in the process of building version 1.0. The code and tests look good and I am updating the documentation
+now. Expect errors if you read the docs on this branch for now.
+
 You can read [the full documentation here](https://hexdocs.pm/policy_wonk/1.0.0-rc.0).
 
 ## Authentication vs. Authorization

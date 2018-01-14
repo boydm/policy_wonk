@@ -115,7 +115,6 @@ You can also specify the policy’s module when you invoke the Enforce or Enforc
       #----------------------------------------------------
       def enforce(conn, policies),  do: PolicyWonk.Policy.enforce(conn, __MODULE__, policies)
       def enforce!(conn, policies), do: PolicyWonk.Policy.enforce!(conn, __MODULE__,  policies)
-      def enforce?(conn, policies), do: PolicyWonk.Policy.enforce?(conn, __MODULE__,  policies)
 
       #----------------------------------------------------
       def authorized?(conn, policies), do: PolicyWonk.Policy.authorized?(conn, __MODULE__, policies)
@@ -172,22 +171,19 @@ You can also specify the policy’s module when you invoke the Enforce or Enforc
   end
 
   #----------------------------------------------------
-  def enforce?(conn, module, policies)
+  def authorized?(conn, module, policies)
 
   # enforce? that a list of policies pass
-  def enforce?(%Plug.Conn{} = conn, module, policies) when is_list(policies) do
-    Enum.all?(policies, &enforce?(conn, module, &1) )
+  def authorized?(%Plug.Conn{} = conn, module, policies) when is_list(policies) do
+    Enum.all?(policies, &authorized?(conn, module, &1) )
   end
 
   # enforce? a single policy
-  def enforce?(%Plug.Conn{} = conn, module, policy) do
+  def authorized?(%Plug.Conn{} = conn, module, policy) do
     case module.policy(conn.assigns, policy) do
       :ok -> true
       _   -> false
     end
   end
-
-  #----------------------------------------------------
-  def authorized?(conn, module, policies), do: enforce?(conn, module, policies)
 
 end

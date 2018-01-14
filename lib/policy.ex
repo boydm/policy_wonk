@@ -99,6 +99,9 @@ You can also specify the policy’s module when you invoke the Enforce or Enforc
   @callback policy_error(Plug.Conn.t, any) :: Plug.Conn.t
 
 
+  @format_error   "Policies must return either :ok or an {:error, message} tuple"
+
+
   #===========================================================================
   # define a policy error here - not found or something like that
   defmodule Error do
@@ -148,6 +151,8 @@ You can also specify the policy’s module when you invoke the Enforce or Enforc
         conn
         |> module.policy_error( message )
         |> Plug.Conn.halt()
+      _ ->
+        raise Error, message: @format_error, module: module, policy: policy
     end
   end
 
@@ -167,6 +172,8 @@ You can also specify the policy’s module when you invoke the Enforce or Enforc
         :ok
       {:error, message} ->
         raise Error, message: message, module: module, policy: policy
+      _ ->
+        raise Error, message: @format_error, module: module, policy: policy
     end
   end
 
@@ -181,8 +188,12 @@ You can also specify the policy’s module when you invoke the Enforce or Enforc
   # enforce? a single policy
   def authorized?(%Plug.Conn{} = conn, module, policy) do
     case module.policy(conn.assigns, policy) do
-      :ok -> true
-      _   -> false
+      :ok ->
+        true
+      {:error, _} ->
+        false
+      _ ->
+        raise Error, message: @format_error, module: module, policy: policy
     end
   end
 

@@ -107,6 +107,9 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
   @callback load_error(Plug.Conn.t, any) :: Plug.Conn.t
 
 
+  @format_error   "Loaders must return either {:ok, key, resource} or an {:error, message}"
+
+
   #===========================================================================
   # define a policy error here - not found or something like that
   defmodule Error do
@@ -144,7 +147,16 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
   def load(%Plug.Conn{} = conn, module, resources, true) when is_list(resources) do
     # spin up tasks for all the loads
     Enum.map(resources, fn(resource) ->
-      Task.async( fn -> module.load_resource(conn, resource, conn.params) end)
+      Task.async( fn ->
+        case module.load_resource(conn, resource, conn.params) do
+          {:ok, key, resource} ->
+            {:ok, key, resource}
+          {:error, message} ->
+            {:error, message}
+          _ ->
+            raise Error, message: @format_error, module: module, resource: resource
+        end
+      end)
     end)
     # wait for the async tasks to complete - assigning each into the conn
     |> Enum.reduce_while( conn, fn (task, acc_conn )->
@@ -195,6 +207,8 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
             {:ok, key, resource}
           {:error, message} ->
             {:error, resource, message}
+          _ ->
+            raise Error, message: @format_error, module: module, resource: resource
         end
       end)
     end)
@@ -216,6 +230,8 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
         resource
       {:error, resource,message} ->
         raise Error, message: message, module: module, resource: resource
+      _ ->
+        raise Error, message: @format_error, module: module, resource: resource
     end
   end
 

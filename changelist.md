@@ -1,5 +1,8 @@
 ## policy_wonk Changelist
 
+### 0.2.1
+* Relaxed the Elixir version requirement back to 1.3 with OTP 18. Tested via Travis.
+
 ### 0.2.0
 * Cleaned up warnings generated from Elixir 1.4.0
 * Removed Behaviour module from policy.ex and loader.ex definitions. Now using @callbackto

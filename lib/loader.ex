@@ -109,7 +109,7 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
 
   #===========================================================================
   # the using macro for loaders adopting this behavioiur
-  defmacro __using__(use_opts) do
+  defmacro __using__(_use_opts) do
     quote do
       @behaviour    PolicyWonk.Loader
     end # quote

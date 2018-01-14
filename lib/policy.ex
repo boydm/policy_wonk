@@ -87,7 +87,6 @@ You can also specify the policy’s module when you invoke the Enforce or Enforc
   @callback policy(Map.t, any) :: :ok | {:error, any}
 
 
-
   @doc """
   Handle a failed policy. Called during the plug chain.
 

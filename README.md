@@ -8,11 +8,14 @@ policy_wonk
 
 PolicyWonk is a lightweight authorization and resource loading library for any Plug or Phoenix application. [Authorization (Auth-Z)](https://en.wikipedia.org/wiki/Authorization) is the process of deciding what a user/entity is allowed to do _after_ they’ve been authenticated.
 
-## What's coming
+## Authentication vs. Authorization
 
-I'm working on changes (as time allows) to make Policy Wonk work well in Phoenix 1.3 umbrella applications. This will probably mean a small number of breaking changes, so may be a major version number bump.
+[Authentication (Auth-N)](https://en.wikipedia.org/wiki/Authentication) is the process of proving that a user or other entity is who/what it claims to be. Tools such as [comeonin](https://hex.pm/packages/comeonin) or [guardian](https://hex.pm/packages/guardian) are mostly about authentication. Any time you are checking hashes or passwords, you are doing Auth-N.
 
-Also re-thinking error flow given Phoenix 1.3's cool new controller actions and how they recover from errors. If you use Policy Wonk and have opinions on how you would like to see this work, this is a good time to make suggestions...
+[Authorization (Auth-Z)](https://en.wikipedia.org/wiki/Authorization) is the process of deciding what a user/entity is allowed to do _after_ they’ve been authenticated.
+
+Authorization ranges from simple (ensuring somebody is logged in), to very rich (make sure the user has specific permissions to see a resource or that one resource is correctly related to the other resources being manipulated).
+
 
 ## Setup
 
@@ -22,7 +25,7 @@ Add `policy_wonk` to the deps section of your application's `mix.exs` file
 defp deps do
   [
     # ...
-    {:policy_wonk, "~> 0.2"}
+    {:policy_wonk, "~> 1.0"}
     # ...
   ]
 end
@@ -30,38 +33,83 @@ end
 
 Don't forget to run `mix deps.get`
 
-## Plugs
+## Examples
 
-PolicyWonk provides three main plugs.
-
-* `PolicyWonk.LoadResource` loads resources into the conn's assigns map. 
-* `PolicyWonk.Enforce` evaluates a specified policy. It either continues or halts the plug chain depending on the policy result.
-* `PolicyWonk.EnforceAction` evaluates a policy for each incoming controller action in Phoenix.
-
-Decisions are made before controller actions are called, isolating authorization logic, encouraging policy re-use, and reducing the odds of messing Auth-Z up as you develop your controllers.
-
-In a router:
+Load and enforce a current user in a router:
 
       pipeline :browser_session do
-        plug PolicyWonk.LoadResource, :current_user
-        plug PolicyWonk.Enforce, :current_user
+        plug MyAppWeb.Loaders, :current_user
+        plug MyAppWeb.Policies, :current_user
       end
       
       pipeline :admin do
-        plug PolicyWonk.Enforce, {:user_permission, "admin"}
+        plug MyAppWeb.Policies, {:admin_permission, "dashboard"}
       end
 
 In a controller:
 
-      plug PolicyWonk.Enforce, {:user_permission, "admin_content"}
-      plug PolicyWonk.EnforceAction
+      plug MyAppWeb.Policies, {:admin_permission, "dashboard"}
 
 
-## Tutorial
+## Policies
 
-You can read [a full tutorial on setting up and using policy wonk here](https://medium.com/@boydm/policy-wonk-the-tutorial-6d2b6e435c46#.nqg6cv9ra). 
+With PolicyWonk, you create policies and loaders for your application. They can be used
+as plugs in your router or controller or called for yes/now descisions in a template or controller.
+
+This lets you enforce things like "a user is signed in" or "the admin has this permission" in the
+router. Or you could use a policy to determine if you should render a set of UI.  
+
+If a policy fails, it halts your plug chain and lets you decide what to do with the error.
+
+Example policy:
+
+      defmodule MyAppWeb.Policies do
+        use PolicyWonk.Policy         # set up support for policies
+        use PolicyWonk.Enforce        # turn this module into an enforcement plug
+
+        def policy( assigns, :current_user ) do
+          case assigns[:current_user] do
+            %MyApp.Account.User{} ->
+              :ok
+            _ ->
+              {:error, :current_user}
+          end
+        end
+
+        def policy_error(conn, :current_user) do
+          MyAppWeb.ErrorHandlers.unauthenticated(conn, "Must be logged in")
+        end
+      end
+
+See the the `PolicyWonk.Policy` documentation for details.
+
+## Loaders
+
+Loaders are similar to policies in that you define functions that can be used in the plug chain.
+Instead of making a yes/now enforcement descision, a loader will load a resource and insert it
+into the conn's `assigns` map.
+
+
+      defmodule MyAppWeb.Loaders do
+        use PolicyWonk.Loader         # set up support for loaders
+        use PolicyWonk.LoadResource   # turn this module into an load resource plug
+
+        def load_resource( _conn, :user, %{"id" => user_id} ) do
+          case MyApp.Account.get_user(user_id) do
+            nil ->  {:error, :user}
+            %MyApp.Account.User{} = user -> {:ok, :user, user}
+          end
+        end
+
+        def load_error(conn, _resource_id) do
+          MyAppWeb.ErrorHandlers.resource_not_found( conn )
+        end
+      end
+
+See the the `PolicyWonk.Loader` documentation for details.
+
 
 ## Documentation
 
-You can read [the full documentation here](https://hexdocs.pm/policy_wonk).
+You can read [the full documentation here](https://hexdocs.pm/policy_wonk/1.0.0-rc.0).
 

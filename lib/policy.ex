@@ -84,7 +84,7 @@ You can also specify the policy’s module when you invoke the Enforce or Enforc
 
   Returns either `:ok`, or error_data that is passed to your `policy_error` function.
   """
-  @callback policy(Map.t, any) :: :ok | any
+  @callback policy(Map.t, any) :: :ok | {:error, any}
 
 
 
@@ -100,15 +100,94 @@ You can also specify the policy’s module when you invoke the Enforce or Enforc
 
 
   #===========================================================================
-  defmacro __using__(use_opts) do
+  # define a policy error here - not found or something like that
+  defmodule Error do
+    @moduledoc false
+    defexception [message: "#{IO.ANSI.red}Policy Failure\n", module: nil, policy: nil]
+  end
+
+
+  #===========================================================================
+  defmacro __using__(_use_opts) do
     quote do
       @behaviour PolicyWonk.Policy
 
-      #------------------------------------------------------------------------
-      def authorized?(conn, policies) do
-        PolicyWonk.Enforce.authorized?(__MODULE__, conn, policies, otp_app: unquote( use_opts[:otp_app]) )
-      end
+      #----------------------------------------------------
+      def enforce(conn, policies),  do: PolicyWonk.Policy.enforce(conn, __MODULE__, policies)
+      def enforce!(conn, policies), do: PolicyWonk.Policy.enforce!(conn, __MODULE__,  policies)
+      def enforce?(conn, policies), do: PolicyWonk.Policy.enforce?(conn, __MODULE__,  policies)
+
+      #----------------------------------------------------
+      def authorized?(conn, policies), do: PolicyWonk.Policy.authorized?(conn, __MODULE__, policies)
+
     end # quote
   end # defmacro
+
+
+  #===========================================================================
+  # internal functions from here down
+
+  #----------------------------------------------------
+  # Enforce called as a (internal) plug
+  def enforce(conn, module, policies)
+
+  # don't do anything if the conn is already halted
+  def enforce(%Plug.Conn{halted: true} = conn, _, _), do: conn
+
+  # enforce a list of policies
+  def enforce(%Plug.Conn{} = conn, module, policies) when is_list(policies) do
+    Enum.reduce(policies, conn, &enforce(&2, module, &1) )
+  end
+
+  # enforce a single policy
+  def enforce(%Plug.Conn{} = conn, module, policy) do
+    case module.policy(conn, policy) do
+      :ok ->
+        conn
+      {:error, message} ->
+        # halt the plug chain
+        conn
+        |> module.policy_error( message )
+        |> Plug.Conn.halt()
+    end
+  end
+
+  #----------------------------------------------------
+  # enforce that either returns :ok or raises an error
+  def enforce!(conn, module, policies)
+
+  # enforce! a list of policies
+  def enforce!(%Plug.Conn{} = conn, module, policies) when is_list(policies) do
+    Enum.each(policies, &enforce!(conn, module, &1))
+  end
+
+  # enforce! a single policies
+  def enforce!(%Plug.Conn{} = conn, module, policy) do
+    case module.policy(conn, policy) do
+      :ok ->
+        :ok
+      {:error, message} ->
+        raise Error, message: message, module: module, policy: policy
+    end
+  end
+
+  #----------------------------------------------------
+  def enforce?(conn, module, policies)
+
+  # enforce? that a list of policies pass
+  def enforce?(%Plug.Conn{} = conn, module, policies) when is_list(policies) do
+    Enum.all?(policies, &enforce?(conn, module, &1) )
+  end
+
+  # enforce? a single policy
+  def enforce?(%Plug.Conn{} = conn, module, policy) do
+    case module.policy(conn, policy) do
+      :ok -> true
+      _   -> false
+    end
+  end
+
+  #----------------------------------------------------
+  def authorized?(conn, module, policies), do: enforce?(conn, module, policies)
 
 end

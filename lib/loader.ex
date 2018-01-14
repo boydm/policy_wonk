@@ -84,7 +84,7 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
   * `{:ok, :name, resource}` If the load succeeds, return the loaded resource in a tuple with :ok, the resource name as an atom, and the resource itself.
   * `error_data` If the load fails, return any error data you want
   """
-  @callback load_resource(Plug.Conn.t, atom, Map.t) :: {:ok, atom, any} | any
+  @callback load_resource(Plug.Conn.t, atom, Map.t) :: {:ok, atom, any} | {:error, any}
 
   @doc """
   Define a load error module.
@@ -108,11 +108,115 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
 
 
   #===========================================================================
-  # the using macro for loaders adopting this behavioiur
+  # define a policy error here - not found or something like that
+  defmodule Error do
+    @moduledoc false
+    defexception [message: "#{IO.ANSI.red}Load Resource Failure\n", module: nil, policy: nil]
+  end
+
+
+  #===========================================================================
   defmacro __using__(_use_opts) do
     quote do
-      @behaviour    PolicyWonk.Loader
+      @behaviour PolicyWonk.Loader
+
+      #----------------------------------------------------
+      def load(conn, resources, async \\ false),  do: PolicyWonk.Loader.load(conn, __MODULE__, resources, async)
+      def load!(conn, resources, async \\ false), do: PolicyWonk.Loader.load!(conn, __MODULE__,  resources, async)
+
     end # quote
   end # defmacro
+
+
+  #----------------------------------------------------
+  # Enforce called as a (internal) plug
+  def load(conn, module, resources, async \\ false)
+
+  # don't do anything if the conn is already halted
+  def load(%Plug.Conn{halted: true} = conn, _, _, _), do: conn
+
+  # load a list of resources, synchronously
+  def load(%Plug.Conn{} = conn, module, resources, false) when is_list(resources) do
+    Enum.reduce(resources, conn, &load(&2, module, &1, false) )
+  end
+
+  # load a list of resources, asynchronously
+  def load(%Plug.Conn{} = conn, module, resources, true) when is_list(resources) do
+    # spin up tasks for all the loads
+    Enum.map(resources, fn(resource) ->
+      Task.async( fn -> module.load_resource(conn, resource, conn.params) end)
+    end)
+    # wait for the async tasks to complete - assigning each into the conn
+    |> Enum.reduce_while( conn, fn (task, acc_conn )->
+      case Task.await(task) do
+        {:ok, key, resource} ->
+          Plug.Conn.assign(acc_conn, key, resource)
+        {:error, message} ->
+          # halt the plug chain
+          acc_conn
+          |> module.load_error( message )
+          |> Plug.Conn.halt()
+      end
+    end)
+  end
+
+  # load a single resource
+  def load(%Plug.Conn{} = conn, module, resource, _) do
+    case module.load_resource(conn, resource, conn.params) do
+      {:ok, key, resource} ->
+        Plug.Conn.assign(conn, key, resource)
+      {:error, message} ->
+        # halt the plug chain
+        conn
+        |> module.load_error( message )
+        |> Plug.Conn.halt()
+    end
+  end
+
+  #----------------------------------------------------
+  # load that returns the resource or raises an error
+  def load!(conn, module, resources, async \\ false)
+
+  # load! a list of resources, synchronously
+  def load!(%Plug.Conn{} = conn, module, resources, false) when is_list(resources) do
+    Enum.reduce(resources, [], fn(resource, acc) ->
+      [ {resource, load!(conn, module, resource)} | acc ]
+    end)
+    |> Enum.reverse()
+  end
+
+  # load! a list of resources, asynchronously
+  def load!(%Plug.Conn{} = conn, module, resources, true) when is_list(resources) do
+    # spin up tasks for all the loads
+    Enum.map(resources, fn(resource) ->
+      Task.async( fn ->
+        case module.load_resource(conn, resource, conn.params) do
+          {:ok, key, resource} ->
+            {:ok, key, resource}
+          {:error, message} ->
+            {:error, resource, message}
+        end
+      end)
+    end)
+    # wait for the async tasks to complete - assigning each into the conn
+    |> Enum.reduce_while( [], fn (task, acc )->
+      case Task.await(task) do
+        {:ok, key, resource} ->
+          [ {key, resource} | acc]
+        {:error, resource, message} ->
+          raise Error, message: message, module: module, resource: resource
+      end
+    end)
+  end
+
+  # load! a single resource
+  def load!(%Plug.Conn{} = conn, module, resource, _) do
+    case module.load_resource(conn, resource, conn.params) do
+      {:ok, _, resource} ->
+        resource
+      {:error, resource,message} ->
+        raise Error, message: message, module: module, resource: resource
+    end
+  end
 
 end

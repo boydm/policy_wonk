@@ -9,26 +9,12 @@ defmodule PolicyWonk.EnforceTest do
     use PolicyWonk.Policy
     use PolicyWonk.Enforce
 
-    def policy( _assigns, :suceeds_a ),         do: :ok
-#    def policy( _assigns, %{thing1: _one, thing2: _two} ), do: :ok
+    def policy( _assigns, :a ),                 do: :ok
     def policy( _assigns, :fails ),             do: {:error, "failed_policy"}
-#    def policy( _assigns, :raises ),            do: {:error, inspect( :something, :bad_argument )}
 
     def policy_error(conn, "failed_policy"),    do: Plug.Conn.assign(conn, :errp, "failed_policy")
-#    def policy_error(_conn, "invalid"),         do: "invalid"
   end
 
-#  defmodule ModController do
-#    def policy( _assigns, :suceeds_c ) do
-#      :ok
-#    end
-#  end
-
-#  defmodule ModRouter do
-#    def policy( _assigns, :suceeds_r ) do
-#      :ok
-#    end
-#  end
 
 
   #============================================================================
@@ -77,7 +63,7 @@ defmodule PolicyWonk.EnforceTest do
 
   #--------------------------------------------------------
   test "call uses the requested policy on the requested module", %{conn: conn} do
-    opts = %{policy_module: ModA, policies: [:suceeds_a]}
+    opts = %{policy_module: ModA, policies: [:a]}
     %Plug.Conn{halted: false} = Enforce.call(conn, opts)
   end
 

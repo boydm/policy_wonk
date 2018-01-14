@@ -114,7 +114,7 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
   # define a policy error here - not found or something like that
   defmodule Error do
     @moduledoc false
-    defexception [message: "#{IO.ANSI.red}Load Resource Failure\n", module: nil, policy: nil]
+    defexception [message: "#{IO.ANSI.red}Load Resource Failure\n", module: nil, resource: nil]
   end
 
 
@@ -143,6 +143,7 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
     Enum.reduce(resources, conn, &load(&2, module, &1, false) )
   end
 
+
   # load a list of resources, asynchronously
   def load(%Plug.Conn{} = conn, module, resources, true) when is_list(resources) do
     # spin up tasks for all the loads
@@ -162,15 +163,17 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
     |> Enum.reduce_while( conn, fn (task, acc_conn )->
       case Task.await(task) do
         {:ok, key, resource} ->
-          Plug.Conn.assign(acc_conn, key, resource)
+          {:cont, Plug.Conn.assign(acc_conn, key, resource)}
         {:error, message} ->
           # halt the plug chain
-          acc_conn
+          acc_conn = acc_conn
           |> module.load_error( message )
           |> Plug.Conn.halt()
+          {:halt, acc_conn}
       end
     end)
   end
+
 
   # load a single resource
   def load(%Plug.Conn{} = conn, module, resource, _) do
@@ -216,7 +219,7 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
     |> Enum.reduce_while( [], fn (task, acc )->
       case Task.await(task) do
         {:ok, key, resource} ->
-          [ {key, resource} | acc]
+          {:cont, [ {key, resource} | acc]}
         {:error, resource, message} ->
           raise_error(message, module, resource )
       end

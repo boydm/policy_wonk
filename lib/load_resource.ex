@@ -117,7 +117,7 @@ If you do specify the module, then that is the only one `PolicyWonk.Enforce` wil
         PolicyWonk.LoadResource.plug_init(
           resources_or_opts,
           unquote(use_opts[:resource_module]) || __MODULE__,
-          unquote(use_opts[:async]) || false
+          unquote(use_opts[:async])
         )
       end
 

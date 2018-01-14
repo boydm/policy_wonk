@@ -138,6 +138,8 @@ Both forms of `authorized?` simulate the policy finding found in the plug.
     quote do
       @otp_app    unquote(use_opts[:otp_app])
 
+      @behaviour PolicyWonk.Policy
+
       def init( opts ),     do: PolicyWonk.Enforce.do_init( opts, otp_app: @otp_app )
       def call(conn, opts), do: PolicyWonk.Enforce.call(conn, opts)
     end # quote

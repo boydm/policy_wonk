@@ -46,8 +46,8 @@ defmodule PolicyWonk.Mixfile do
       {:plug, "~> 1.1"},
 
       # Docs dependencies
-      {:ex_doc, "~> 0.14", only: :dev},
-      {:inch_ex, "~> 0.5", only: :dev}
+      {:ex_doc, ">= 0.0.0", only: [:dev, :docs]},
+      {:inch_ex, ">= 0.0.0", only: :docs}
     ]
   end
 

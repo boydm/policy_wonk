@@ -152,7 +152,7 @@ You can also specify the policy’s module when you invoke the Enforce or Enforc
         |> module.policy_error( message )
         |> Plug.Conn.halt()
       _ ->
-        raise Error, message: @format_error, module: module, policy: policy
+        raise_error(@format_error, module, policy )
     end
   end
 
@@ -173,7 +173,7 @@ You can also specify the policy’s module when you invoke the Enforce or Enforc
       {:error, message} ->
         raise Error, message: message, module: module, policy: policy
       _ ->
-        raise Error, message: @format_error, module: module, policy: policy
+        raise_error(@format_error, module, policy )
     end
   end
 
@@ -193,8 +193,19 @@ You can also specify the policy’s module when you invoke the Enforce or Enforc
       {:error, _} ->
         false
       _ ->
-        raise Error, message: @format_error, module: module, policy: policy
+        raise_error(@format_error, module, policy )
     end
   end
+
+
+  #----------------------------------------------------------------------------
+  defp raise_error(message, module, policy ) do
+    message = message <> "\n" <>
+    "#{IO.ANSI.green}module: #{IO.ANSI.yellow}#{inspect(module)}\n" <>
+    "#{IO.ANSI.green}policy: #{IO.ANSI.yellow}#{inspect(policy)}\n" <>
+    IO.ANSI.default_color()
+    raise Error, message: message, module: module, policy: policy
+  end
+
 
 end

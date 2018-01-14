@@ -154,7 +154,7 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
           {:error, message} ->
             {:error, message}
           _ ->
-            raise Error, message: @format_error, module: module, resource: resource
+            raise_error(@format_error, module, resource )
         end
       end)
     end)
@@ -208,7 +208,7 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
           {:error, message} ->
             {:error, resource, message}
           _ ->
-            raise Error, message: @format_error, module: module, resource: resource
+            raise_error(@format_error, module, resource )
         end
       end)
     end)
@@ -218,7 +218,7 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
         {:ok, key, resource} ->
           [ {key, resource} | acc]
         {:error, resource, message} ->
-          raise Error, message: message, module: module, resource: resource
+          raise_error(message, module, resource )
       end
     end)
   end
@@ -229,10 +229,19 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
       {:ok, _, resource} ->
         resource
       {:error, resource,message} ->
-        raise Error, message: message, module: module, resource: resource
+        raise_error(message, module, resource )
       _ ->
-        raise Error, message: @format_error, module: module, resource: resource
+        raise_error(@format_error, module, resource )
     end
+  end
+
+  #----------------------------------------------------------------------------
+  defp raise_error(message, module, resource ) do
+    message = message <> "\n" <>
+    "#{IO.ANSI.green}module: #{IO.ANSI.yellow}#{inspect(module)}\n" <>
+    "#{IO.ANSI.green}resource: #{IO.ANSI.yellow}#{inspect(resource)}\n" <>
+    IO.ANSI.default_color()
+    raise Error, message: message, module: module, resource: resource
   end
 
 end

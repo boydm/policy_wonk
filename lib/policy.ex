@@ -102,6 +102,8 @@ You can also specify the policy’s module when you invoke the Enforce or Enforc
   #===========================================================================
   defmacro __using__(use_opts) do
     quote do
+      @behaviour PolicyWonk.Policy
+
       #------------------------------------------------------------------------
       def authorized?(conn, policies) do
         PolicyWonk.Enforce.authorized?(__MODULE__, conn, policies, otp_app: unquote( use_opts[:otp_app]) )

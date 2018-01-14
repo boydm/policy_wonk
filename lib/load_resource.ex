@@ -128,8 +128,6 @@ If you do specify the module, then that is the only one `PolicyWonk.Enforce` wil
     quote do
       @otp_app    unquote(use_opts[:otp_app])
 
-      @behaviour    PolicyWonk.Loader
-
       def init( opts ),     do: PolicyWonk.LoadResource.do_init( opts, otp_app: @otp_app )
       def call(conn, opts), do: PolicyWonk.LoadResource.call(conn, opts)
     end # quote

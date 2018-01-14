@@ -106,4 +106,13 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
   """
   @callback load_error(Plug.Conn.t, any) :: Plug.Conn.t
 
+
+  #===========================================================================
+  # the using macro for loaders adopting this behavioiur
+  defmacro __using__(use_opts) do
+    quote do
+      @behaviour    PolicyWonk.Loader
+    end # quote
+  end # defmacro
+
 end

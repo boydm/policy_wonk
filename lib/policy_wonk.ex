@@ -70,7 +70,7 @@ Example policy:
 
         def policy( assigns, :current_user ) do
           case assigns[:current_user] do
-            %MyAppWeb.Account.User{} ->
+            %MyApp.Account.User{} ->
               :ok
             _ ->
               {:error, :current_user}
@@ -96,9 +96,9 @@ into the conn's `assigns` map.
         use PolicyWonk.LoadResource   # turn this module into an load resource plug
 
         def load_resource( _conn, :user, %{"id" => user_id} ) do
-          case MyAppWeb.Account.get_user(user_id) do
+          case MyApp.Account.get_user(user_id) do
             nil ->  {:error, :user}
-            %MyAppWeb.Account.User{} = user -> {:ok, :user, user}
+            %MyApp.Account.User{} = user -> {:ok, :user, user}
           end
         end
 
@@ -153,11 +153,135 @@ Just create the approatiate policy or loader modules and use them directly.
 
 ## Using policies and Loaders
 
+You no longer directly call `PolicyWonk.Policy` and `PolicyWonk.LoadResource` as plugs
+from your router.
+
+After using them in your policy modules, call ***your*** module in the router. This lets you be
+explict about which policy modules are used where without anything in config.exs.
+
+You can have different policy modules for different apps in an umbrella project, or simply build
+up a library policy modules that you can re-use as appropriate.
+
+      # Old. Don't do this
+      # pipeline :browser_session do
+      #   plug PolicyWonk.LoadResource, :current_user
+      #   plug PolicyWonk.Enforce, :current_user
+      # end
+
+      # New. Do this
+      pipeline :browser_session do
+        plug MyAppWeb.Loaders, :current_user
+        plug MyAppWeb.Policies, :current_user
+      end
+
+
 ## Policies
+
+Policies now require you to be more specific about when the policy fails. Previously, :ok was
+success and anything else was a failure. This lead to code that wasn't obvious about what
+the failure cases were. Now the only accepted return values are :ok and {:error, message}.
+
+The `message` part of `{:error, message}` can be any term you want and will be passed, unchanged, into
+your `policy_error` function.
+
+      # Old. Don't do this
+      # def policy( assigns, :current_user ) do
+      #   case assigns[:current_user] do
+      #     %MyApp.Account.User{} ->
+      #       :ok
+      #     _ ->
+      #       :current_user
+      #   end
+      # end
+
+      # New. Do this
+      def policy( assigns, :current_user ) do
+        case assigns[:current_user] do
+          %MyApp.Account.User{} ->
+            :ok
+          _ ->
+            {:error, :current_user}
+        end
+      end
+
 
 ## Loaders
 
-Stuff goes here
+Loaders also now require you to be more specific about when loading a resource fails. Previously,
+{:ok, key, resource} was success and anything else was a failure. This lead to code that wasn't
+obvious about what the failure cases were. Now the only accepted return values are {:ok, key, resource}
+and {:error, message}.
 
+The `message` part of `{:error, message}` can be any term you want and will be passed, unchanged, into
+your `load_error` function.
+
+      # Old. Don't do this
+      # case Repo.get(User, user_id) do
+      #   nil ->  :user
+      #   user -> {:ok, :user, nil}
+      # end
+
+      # New. Do this
+      case MyApp.Account.get_user(user_id) do
+        nil ->  {:error, :user}
+        user -> {:ok, :user, user}
+      end
+
+
+## Local Policies and Loaders in a Controller
+
+Previously, you could simply define a policy in a controller and it would override whatever was
+in your policy module. You can still have a policy or loader specific to a controller, but you
+need to call as a plug it in a more explicit fasion. This is more functional in nature.
+
+To use a policy that is local to a controller, call `use PolicyWonk.Policy` at the top of your
+controller. This adds a small set of functions to your controller including `enforce/2`, which
+allows you to call local policies as a plug.
+
+
+      # Old. Don't do this
+      # defmodule MyAppWeb.Controller.AdminController do
+      #   use MyAppWeb, :controller
+      # 
+      #   plug PolicyWonk.Enforce :user
+      #
+      #   policy(conn, :user) do
+      #     ...
+      #   end
+      # end
+
+      # New. Do this
+      defmodule MyAppWeb.Controller.AdminController do
+        use MyAppWeb, :controller
+        use PolicyWonk.Policy
+
+        plug :enforce, :user
+
+        policy(conn, :user) do
+          ...
+        end
+      end
+
+Note that you do not need to call `use PolicyWonk.Enforce` to use a local policy in a controller.
+`PolicyWonk.Enforce` is only used to turn a module into a plug that can be called from a router.
 """
+
 end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

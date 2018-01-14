@@ -141,7 +141,7 @@ You can also specify the policy’s module when you invoke the Enforce or Enforc
 
   # enforce a single policy
   def enforce(%Plug.Conn{} = conn, module, policy) do
-    case module.policy(conn, policy) do
+    case module.policy(conn.assigns, policy) do
       :ok ->
         conn
       {:error, message} ->
@@ -163,7 +163,7 @@ You can also specify the policy’s module when you invoke the Enforce or Enforc
 
   # enforce! a single policies
   def enforce!(%Plug.Conn{} = conn, module, policy) do
-    case module.policy(conn, policy) do
+    case module.policy(conn.assigns, policy) do
       :ok ->
         :ok
       {:error, message} ->
@@ -181,7 +181,7 @@ You can also specify the policy’s module when you invoke the Enforce or Enforc
 
   # enforce? a single policy
   def enforce?(%Plug.Conn{} = conn, module, policy) do
-    case module.policy(conn, policy) do
+    case module.policy(conn.assigns, policy) do
       :ok -> true
       _   -> false
     end

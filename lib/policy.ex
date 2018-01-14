@@ -98,4 +98,15 @@ You can also specify the policy’s module when you invoke the Enforce or Enforc
 
   @callback policy_error(Plug.Conn.t, any) :: Plug.Conn.t
 
+
+  #===========================================================================
+  defmacro __using__(use_opts) do
+    quote do
+      #------------------------------------------------------------------------
+      def authorized?(conn, policies) do
+        PolicyWonk.Enforce.authorized?(__MODULE__, conn, policies, otp_app: unquote( use_opts[:otp_app]) )
+      end
+    end # quote
+  end # defmacro
+
 end

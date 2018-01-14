@@ -29,44 +29,52 @@ defmodule PolicyWonk.EnforceTest do
 
   #============================================================================
   # init
+
   #----------------------------------------------------------------------------
-  test "init sets up full options" do
+  test "init sets up policies with defaults" do
     assert Enforce.init(%{
-      policies: [:a,:b],
-      module: ModA,
-      invalid: "invalid"
-    }) == %{policies: [:a,:b], module: ModA}
+      policies: [:a,:b]
+    }) == %{policies: [:a,:b], module: nil, otp_app: :policy_wonk}
   end
 
   #----------------------------------------------------------------------------
-  test "init handles policies only partial opts" do
+  test "init sets up policies a named otp app" do
     assert Enforce.init(%{
-      policies: [:a,:b]
-    }) == %{policies: [:a,:b], module: nil}
+      policies: [:a,:b],
+      otp_app: :test_app
+    }) == %{policies: [:a,:b], module: nil, otp_app: :test_app}
   end
 
   #----------------------------------------------------------------------------
   test "init sets single policy into opts" do
-    assert Enforce.init(:policy_name) == 
-      %{policies: [:policy_name], module: nil}
+    assert Enforce.init(:policy_name) ==  %{policies: [:policy_name], module: nil, otp_app: :policy_wonk}
   end
 
   #----------------------------------------------------------------------------
   test "init sets single policy (in opts) into a list" do
     assert Enforce.init(%{policies: :a}) == 
-      %{policies: [:a], module: nil}
+      %{policies: [:a], module: nil, otp_app: :policy_wonk}
   end
 
   #----------------------------------------------------------------------------
   test "accepts map as a policy" do
     assert Enforce.init(%{thing1: "one", thing2: "two"}) == 
-      %{policies: [%{thing1: "one", thing2: "two"}], module: nil}
+      %{policies: [%{thing1: "one", thing2: "two"}], module: nil, otp_app: :policy_wonk}
   end
 
   #----------------------------------------------------------------------------
   test "init sets policy list into opts" do
     assert Enforce.init([:policy_a, :policy_b]) == 
-      %{policies: [:policy_a, :policy_b], module: nil}
+      %{policies: [:policy_a, :policy_b], module: nil, otp_app: :policy_wonk}
+  end
+
+  #----------------------------------------------------------------------------
+  test "init sets up full options" do
+    assert Enforce.init(%{
+      policies: [:a,:b],
+      module: ModA,
+      otp_app: :test_app
+    }) == %{policies: [:a,:b], module: ModA, otp_app: :test_app}
   end
 
   #----------------------------------------------------------------------------
@@ -89,40 +97,40 @@ defmodule PolicyWonk.EnforceTest do
 
   #----------------------------------------------------------------------------
   test "call uses policy on global (config) policies module", %{conn: conn} do
-    opts = %{module: nil, policies: [:from_config]}
+    opts = %{module: nil, policies: [:from_config], otp_app: :policy_wonk}
     Enforce.call(conn, opts)
   end
 
   #----------------------------------------------------------------------------
   test "call uses policy on the requested module - generic conn", %{conn: conn} do
-    opts = %{module: ModA, policies: [:suceeds_a]}
+    opts = %{module: ModA, policies: [:suceeds_a], otp_app: :policy_wonk}
     Enforce.call(conn, opts)
   end
 
   #----------------------------------------------------------------------------
   test "call uses policy on (optional) controller", %{conn: conn} do
-    opts = %{module: nil, policies: [:suceeds_c]}
+    opts = %{module: nil, policies: [:suceeds_c], otp_app: :policy_wonk}
     conn = Map.put(conn, :private, %{phoenix_controller: ModController})
     Enforce.call(conn, opts)
   end
 
   #----------------------------------------------------------------------------
   test "call uses policy on (optional) router", %{conn: conn} do
-    opts = %{module: nil, policies: [:suceeds_r]}
+    opts = %{module: nil, policies: [:suceeds_r], otp_app: :policy_wonk}
     conn = Map.put(conn, :private, %{phoenix_router: ModRouter})
     Enforce.call(conn, opts)
   end
 
   #----------------------------------------------------------------------------
   test "call handles errors after policy failures", %{conn: conn} do
-    opts = %{module: ModA, policies: [:fails]}
+    opts = %{module: ModA, policies: [:fails], otp_app: :policy_wonk}
     conn = Enforce.call(conn, opts)
     assert conn.assigns.errp == "failed_policy"
   end
 
   #----------------------------------------------------------------------------
   test "call raises if policy not found", %{conn: conn} do
-    opts = %{module: ModA, policies: [:missing]}
+    opts = %{module: ModA, policies: [:missing], otp_app: :policy_wonk}
     assert_raise PolicyWonk.Enforce.PolicyError, fn ->
       Enforce.call(conn, opts)
     end
@@ -130,7 +138,7 @@ defmodule PolicyWonk.EnforceTest do
 
   #----------------------------------------------------------------------------
   test "call surfaces error raised inside policy", %{conn: conn} do
-    opts = %{module: ModA, policies: [:raises]}
+    opts = %{module: ModA, policies: [:raises], otp_app: :policy_wonk}
     assert_raise FunctionClauseError, fn ->
       Enforce.call(conn, opts)
     end
@@ -138,7 +146,7 @@ defmodule PolicyWonk.EnforceTest do
 
   #----------------------------------------------------------------------------
   test "call works with a map as a policy", %{conn: conn} do
-    opts = %{module: ModA, policies: [%{thing1: "one", thing2: "two"}]}
+    opts = %{module: ModA, policies: [%{thing1: "one", thing2: "two"}], otp_app: :policy_wonk}
     Enforce.call(conn, opts)
   end
 

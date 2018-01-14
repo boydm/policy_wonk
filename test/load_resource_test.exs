@@ -54,7 +54,8 @@ defmodule PolicyWonk.LoadResourceTest do
       %{
         resources: [:something_to_load],
         module: "module",
-        async: true       # From config
+        async: true,       # From config
+        otp_app: :policy_wonk
       }
   end
 
@@ -64,7 +65,8 @@ defmodule PolicyWonk.LoadResourceTest do
       %{
         resources: [:something_to_load, :another_to_load],
         module: nil,
-        async: false       # From config
+        async: false,       # From config
+        otp_app: :policy_wonk
       }
   end
 
@@ -74,7 +76,8 @@ defmodule PolicyWonk.LoadResourceTest do
       %{
         resources: [:something_to_load],
         module: "module",
-        async: false       # From config
+        async: false,       # From config
+        otp_app: :policy_wonk
       }
   end
 
@@ -84,7 +87,8 @@ defmodule PolicyWonk.LoadResourceTest do
       %{
         resources: [:something_to_load],
         module: nil,
-        async: true       # From config
+        async: true,       # From config
+        otp_app: :policy_wonk
       }
   end
 
@@ -94,7 +98,8 @@ defmodule PolicyWonk.LoadResourceTest do
       %{
         resources: [:something_to_load, :another_to_load],
         module: nil,
-        async: false       # From config
+        async: false,       # From config
+        otp_app: :policy_wonk
       }
   end
 
@@ -104,7 +109,8 @@ defmodule PolicyWonk.LoadResourceTest do
       %{
         resources: [:something_to_load],
         module: nil,
-        async: false       # From config
+        async: false,       # From config
+        otp_app: :policy_wonk
       }
   end
 
@@ -114,7 +120,8 @@ defmodule PolicyWonk.LoadResourceTest do
       %{
         resources: [%{name: "test_name"}],
         module: nil,
-        async: false       # From config
+        async: false,       # From config
+        otp_app: :policy_wonk
       }
   end
 

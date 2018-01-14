@@ -131,21 +131,17 @@ Both forms of `authorized?` simulate the policy finding found in the plug.
 
   alias PolicyWonk.Utils
 
-
-
-  #@config_policies Application.get_env(:policy_wonk, PolicyWonk)[:policies]
-
+  @default_otp_app      :policy_wonk
 
   #===========================================================================
-  defmacro __using__(_opts) do
+  defmacro __using__(use_opts) do
     quote do
-      #------------------------------------------------------------------------
-      def authorized?(conn, policies) do
-        PolicyWonk.Enforce.authorized?(__MODULE__, conn, policies)
-      end
+      @otp_app    unquote(use_opts[:otp_app])
+
+      def init( opts ),     do: PolicyWonk.Enforce.do_init( opts, otp_app: @otp_app )
+      def call(conn, opts), do: PolicyWonk.Enforce.call(conn, opts)
     end # quote
   end # defmacro
-
 
 
   #===========================================================================
@@ -168,21 +164,22 @@ Both forms of `authorized?` simulate the policy finding found in the plug.
       be extracted and sent to your policy.
     * `policies` A list of policies to be evaluated. Can also be a single policy.
   """
-  @spec authorized?(atom, any, List.t | any) :: boolean
-  def authorized?(module, conn = %Plug.Conn{}, policies), do:
-    authorized?(module, conn.assigns, policies)
-  def authorized?(module, data, policies) when is_list(policies) do
+  @spec authorized?(atom, any, List.t | any, List.t) :: boolean
+  def authorized?(module, conn, policies, opts \\ [])
+  def authorized?(module, %Plug.Conn{} = conn, policies, opts), do:
+    authorized?(module, conn.assigns, policies, opts)
+  def authorized?(module, data, policies, opts) when is_list(policies) do
     modules = []
       |> Utils.append_truthy( module )
-      |> Utils.append_truthy( config_policies() )
+      |> Utils.append_truthy( config_policies(opts[:otp_app] || @default_otp_app) )
 
     case evaluate_policies(modules, data, policies) do
       :ok -> true
       _   -> false
     end
   end
-  def authorized?(module, data, policy), do:
-    authorized?(module, data, [policy])
+  def authorized?(module, data, policy, opts), do:
+    authorized?(module, data, [policy], opts)
 
 
   #===========================================================================
@@ -192,21 +189,40 @@ Both forms of `authorized?` simulate the policy finding found in the plug.
   [See the discussion of specifying policies above.](PolicyWonk.Enforce.html#module-specifying-the-policy-module)
   """
 
-  def init(%{policies: []}),                  do: init_empty_policies_error()
-  def init(%{policies: policies, module: module})
-                            when is_list(policies) and is_atom(module), do:
-    %{policies: policies, module: module}
-  def init(%{policies: policies, module: module}) when is_atom(module), do:
-    init( %{policies: [policies], module: module} )
-  def init(%{policies: policies}),            do: init( policies )
-  def init(policies) when is_list(policies),  do: init( %{policies: policies, module: nil} )
+  def init(%{policies: []}), do: init_empty_policies_error()
+
+  # the main init function
+  def init(%{policies: policies} = opts) when is_list(policies) do
+    %{
+      policies:   policies,
+      module:     opts[:module] || nil,
+      otp_app:    opts[:otp_app] || @default_otp_app
+    }
+  end
+
+  # put the policies into a list
+  def init(%{policies: policies} = opts) do
+    opts
+    |> Map.put(:policies, [policies])
+    |> init()
+  end
+
+  # just a policy or policies were passed in a list
+  def init(policies) when is_list(policies),  do: init( %{policies: policies} )
   def init(policy),                           do: init( %{policies: [policy], module: nil} )
+
+
   #--------------------------------------------------------
   defp init_empty_policies_error() do
     msg = "PolicyWonk.Enforce requires at least one policy reference"
     raise %PolicyWonk.Enforce.PolicyError{ message: msg }
   end
 
+  #--------------------------------------------------------
+  @doc false
+  def do_init(pol_opts, opts) when is_map(pol_opts),  do: init( Map.put(pol_opts, :otp_app, opts[:otp_app]))
+  def do_init(policies, opts) when is_list(policies), do: init( %{policies: policies, module: nil, otp_app: opts[:otp_app]} )
+  def do_init(policy, opts),                          do: init( %{policies: [policy], module: nil, otp_app: opts[:otp_app]} )
 
   #----------------------------------------------------------------------------
   #------------------------------------------------------------------------
@@ -221,7 +237,7 @@ Both forms of `authorized?` simulate the policy finding found in the plug.
 
     modules = []
       |> Utils.append_truthy( module )
-      |> Utils.append_truthy( config_policies() )
+      |> Utils.append_truthy( config_policies(opts[:otp_app]) )
 
     # evaluate the policies. Cal error func if any fail
     case evaluate_policies( modules, conn.assigns, opts.policies ) do
@@ -286,8 +302,8 @@ Both forms of `authorized?` simulate the policy finding found in the plug.
   end
 
   #----------------------------------------------------------------------------
-  defp config_policies do
-    Application.get_env(:policy_wonk, PolicyWonk)[:policies]
+  defp config_policies( otp_app ) do
+    Application.get_env(otp_app, PolicyWonk)[:policies]
   end
 
 end

@@ -111,16 +111,27 @@ If you do specify the module, then that is the only one `PolicyWonk.Enforce` wil
 
 """
 
-
-  #@config_loaders Application.get_env(:policy_wonk, PolicyWonk)[:loaders]
-  #@config_async   Application.get_env(:policy_wonk, PolicyWonk)[:load_async]
+  @default_otp_app      :policy_wonk
 
 
   #===========================================================================
   # define a policy error here - not found or something like that
   defmodule ResourceError do
+    @moduledoc false
     defexception [message: "#{IO.ANSI.red}Unable to execute a resource\n"]
   end
+
+
+  #===========================================================================
+  # the using macro for loaders adopting this behavioiur
+  defmacro __using__(use_opts) do
+    quote do
+      @otp_app    unquote(use_opts[:otp_app])
+
+      def init( opts ),     do: PolicyWonk.LoadResource.do_init( opts, otp_app: @otp_app )
+      def call(conn, opts), do: PolicyWonk.LoadResource.call(conn, opts)
+    end # quote
+  end # defmacro
 
 
   #===========================================================================
@@ -130,6 +141,8 @@ If you do specify the module, then that is the only one `PolicyWonk.Enforce` wil
   [See the discussion of specifying loaders above.](PolicyWonk.LoadResource.html#module-specifying-loaders)
   """
   def init(%{resources: resources} = opts) when is_list(resources) do
+    otp_app = opts[:otp_app] || @default_otp_app
+
     async = case Map.fetch(opts, :async) do
       {:ok, async} -> async
       _ -> config_async()
@@ -138,12 +151,35 @@ If you do specify the module, then that is the only one `PolicyWonk.Enforce` wil
     %{
       resources: Enum.uniq( resources ),
       module: opts[:module],
-      async:  async
+      async: async,
+      otp_app: otp_app
     }
   end
   def init(%{resources: resource} = opts), do: init( Map.put(opts, :resources, [resource]) )
   def init(resources) when is_list(resources), do: init( %{resources: resources} )
   def init(resource), do: init( %{resources: [resource], async: false} )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  #--------------------------------------------------------
+  # next time... offer fewer choices on how to format the options. would make this easier
+  @doc false
+  def do_init(res_opts, opts) when is_map(res_opts),  do: init( Map.put(res_opts, :otp_app, opts[:otp_app]) )
+  def do_init(ress, opts) when is_list(ress),         do: init( %{resources: ress, otp_app: opts[:otp_app]} )
+  def do_init(res, opts), do: init( %{resources: [res], async: false, otp_app: opts[:otp_app]} )
 
 
   #----------------------------------------------------------------------------

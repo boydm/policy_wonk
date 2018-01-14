@@ -114,15 +114,11 @@ If you do specify the module, then that is the only one `PolicyWonk.Enforce` wil
   defmacro __using__(use_opts) do
     quote do
       def init( resources_or_opts ) do
-        case Keyword.keyword?(resources_or_opts) do
-          true ->
-            resources_or_opts
-            |> Keyword.put_new( :resource_module, unquote(use_opts[:resource_module]) || __MODULE__ )
-            |> Keyword.put_new( :async, unquote(use_opts[:async]) || false )
-            |> PolicyWonk.LoadResource.init()
-          false ->
-            PolicyWonk.LoadResource.init(resource_module: __MODULE__, async: false, resources: resources_or_opts)
-        end
+        PolicyWonk.LoadResource.plug_init(
+          resources_or_opts,
+          unquote(use_opts[:resource_module]) || __MODULE__,
+          unquote(use_opts[:async]) || false
+        )
       end
 
       def call(conn, opts), do: PolicyWonk.LoadResource.call(conn, opts)
@@ -145,8 +141,24 @@ If you do specify the module, then that is the only one `PolicyWonk.Enforce` wil
   [See the discussion of specifying loaders above.](PolicyWonk.LoadResource.html#module-specifying-loaders)
   """
 
+  #--------------------------------------------------------
   def init( opts ) when is_list(opts), do: do_init(opts[:resource_module], opts[:resources], opts[:async])
 
+  #--------------------------------------------------------
+  @doc false
+  def plug_init( resources_or_opts, module, async ) do
+    case Keyword.keyword?(resources_or_opts) do
+      true ->
+        resources_or_opts
+        |> Keyword.put_new( :resource_module, module )
+        |> Keyword.put_new( :async, async )
+        |> PolicyWonk.LoadResource.init()
+      false ->
+        PolicyWonk.LoadResource.init(resource_module: module, async: false, resources: resources_or_opts)
+    end
+  end
+
+  #--------------------------------------------------------
   defp do_init( nil, _, _ ), do: raise Error, message: "#{IO.ANSI.red}Must supply a valid :resource_module#{IO.ANSI.default_color()}"
   defp do_init( _, [], _ ), do: raise Error, message: "#{IO.ANSI.red}Must supply at least one resource to load#{IO.ANSI.default_color()}"
 
@@ -162,7 +174,7 @@ If you do specify the module, then that is the only one `PolicyWonk.Enforce` wil
     do_init( policy_module, [policy], async )
   end
 
-  #----------------------------------------------------------------------------
+  #--------------------------------------------------------
   @doc """
   Call is used by the plug stack. 
   """

@@ -6,7 +6,7 @@ policy_wonk
 [![Hex.pm](https://img.shields.io/hexpm/dw/policy_wonk.svg)](https://hex.pm/packages/policy_wonk)
 [![Hex.pm](https://img.shields.io/hexpm/dt/policy_wonk.svg)](https://hex.pm/packages/policy_wonk)
 
-PolicyWonk is a lightweight authorization and resource loading library for any Plug or Phoenix application. [Authorization (Auth-Z)](https://en.wikipedia.org/wiki/Authorization) is the process of deciding what a user/entity is allowed to do _after_ they’ve been authenticated.
+PolicyWonk is a lightweight authorization and resource loading library for any Plug or Phoenix application.
 
 ## Authentication vs. Authorization
 
@@ -35,7 +35,7 @@ Don't forget to run `mix deps.get`
 
 ## Examples
 
-Load and enforce a current user in a router:
+Load and enforce the current user in a router:
 
       pipeline :browser_session do
         plug MyAppWeb.Loaders, :current_user
@@ -82,6 +82,30 @@ Example policy:
       end
 
 See the the `PolicyWonk.Policy` documentation for details.
+
+## Policies outside plugs
+
+In addition to evaluating policies in a plug chain, you will often want to test a policy
+when rendering ui, processing an action in a controller, or somewhere else.
+
+The `use PolicyWonk.Policy` call in your policy module adds the `enforce!/2` and `authorized?/2`
+functions, which you can use in templates or controllers to decide what UI to show or to raise
+an error under certain condisions.
+
+In a template:
+
+      <%= if MyAppWeb.Policies.authorized?(@conn, {:admin_permission, "dashbaord"}) do %>
+        <%= link "Admin Dashboard", to: admin_dashboard_path(@conn, :index) %>
+      <% end %>
+
+In an action in a controller:
+
+      def settings(conn, params) do
+        ...
+        # raise an error if the current user is not the user specified in the url.
+        MyAppWeb.Policies.enforce!(conn, :user_is_self)
+        ...
+      end
 
 ## Loaders
 

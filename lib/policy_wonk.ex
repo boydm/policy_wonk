@@ -5,7 +5,7 @@ A lightweight authorization and resource loading tool for use with any Plug or P
 
 ## About version 1.0
 
-Policy Wonk is almost almost completely re-written for version 1.0. After living with it for well
+Policy Wonk is almost completely re-written for version 1.0. After living with it for well
 over a year, I realized there were a set of issues that warranted re-opening the underlying
 architecture.
 
@@ -30,7 +30,7 @@ existing policies to version 1.0. There is a small amount of work to do, but it 
 
 [Authorization (Auth-Z)](https://en.wikipedia.org/wiki/Authorization) is the process of deciding what a user/entity is allowed to do _after_ they’ve been authenticated.
 
-Authorization ranges from simple (ensuring somebody is logged in), to very rich (make sure the user has specific permissions to see a resource or that one resource is correctly related to the other resources being manipulated).
+Authorization ranges from simple (ensuring somebody is logged in), to very rich (making sure the user has specific permissions to see a resource or that one resource is correctly related to the other resources being manipulated).
 
 
 ## Examples
@@ -55,7 +55,7 @@ In a controller:
 # Policies
 
 With PolicyWonk, you create policies and loaders for your application. They can be used
-as plugs in your router or controller or called for yes/now descisions in a template or controller.
+as plugs in your router or controller or called for yes/no descisions in a template or controller.
 
 This lets you enforce things like "a user is signed in" or "the admin has this permission" in the
 router. Or you could use a policy to determine if you should render a set of UI.  
@@ -87,7 +87,7 @@ See the the `PolicyWonk.Policy` documentation for details.
 # Loaders
 
 Loaders are similar to policies in that you define functions that can be used in the plug chain.
-Instead of making a yes/now enforcement descision, a loader will load a resource and insert it
+Instead of making a yes/no enforcement descision, a loader will load a resource and insert it
 into the conn's `assigns` map.
 
 
@@ -114,7 +114,7 @@ See the the `PolicyWonk.Loader` documentation for details.
 
 PolicyWonk defines two behaviours for creating policies and resource loaders.
 
-* `PolicyWonk.Policy` Callbacks for a defining a policy and handling policy failures.
+* `PolicyWonk.Policy` Callbacks for defining a policy and handling policy failures.
 * `PolicyWonk.Loader` Callbacks for defining a resource loader and handing load failures.
 
 # Policies outside plugs
@@ -124,7 +124,7 @@ when rendering ui, processing an action in a controller, or somewhere else.
 
 The `use PolicyWonk.Policy` call in your policy module adds the `enforce!/2` and `authorized?/2`
 functions, which you can use in templates or controllers to decide what UI to show or to raise
-an error under certain condisions.
+an error under certain conditions.
 
 In a template:
 
@@ -147,7 +147,7 @@ In an action in a controller:
 
 You no longer need to set up anything in your config files.
 
-Just create the approatiate policy or loader modules and use them directly.
+Just create the appropriate policy or loader modules and use them directly.
 
 # Upgrading to version 1.0
 
@@ -232,7 +232,7 @@ your `load_error` function.
 
 Previously, you could simply define a policy in a controller and it would override whatever was
 in your policy module. You can still have a policy or loader specific to a controller, but you
-need to call as a plug it in a more explicit fasion. This is more functional in nature.
+need to call it as a plug in a more explicit fashion. This is more functional in nature.
 
 To use a policy that is local to a controller, call `use PolicyWonk.Policy` at the top of your
 controller. This adds a small set of functions to your controller including `enforce/2`, which

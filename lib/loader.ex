@@ -212,11 +212,13 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
 
   # load! a single resource
   def load!(%Plug.Conn{} = conn, module, resource, _) do
-    case call_load_resource(conn, module, resource) do
-      {:ok, _, resource} ->
+    case module.load_resource(conn, resource, conn.params) do
+      {:ok, key, resource} ->
         resource
-      {:error, resource, message} ->
+      {:error, message} ->
         raise_error(message, module, resource )
+      _ ->
+        raise_error(@format_error, module, resource )
     end
   end
 

@@ -13,7 +13,6 @@ after_script:
   - MIX_ENV=docs mix deps.get
   - MIX_ENV=docs mix inch.report
 
-
 matrix:
   include:
     - elixir: 1.3.4

@@ -47,7 +47,8 @@ defmodule PolicyWonk.Mixfile do
 
       # Docs dependencies
       {:ex_doc, ">= 0.0.0", only: [:dev, :docs]},
-      {:inch_ex, ">= 0.0.0", only: :docs}
+      {:inch_ex, ">= 0.0.0", only: :docs},
+      {:credo, "~> 0.8.10", only: [:dev, :test], runtime: false}
     ]
   end
 

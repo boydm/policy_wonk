@@ -1,32 +1,84 @@
 defmodule PolicyWonk.Policy do
 @moduledoc """
 
-To keep authorization logic organized, PolicyWonk uses policy functions that you create either in your controllers, router, or a central location.
+# Overview
 
 A policy is a function that makes a simple yes/no decision.
 
       # ensure a user is signed in
       def policy( assigns, :current_user ) do
         case assigns[:current_user] do
-          _user = %MyApp.User{} -> :ok
-          _ ->    :current_user
+          %MyApp.Account.User{} -> :ok
+          _ ->    {:error, :current_user}
         end
       end
- 
-The *only* way to indicate success from a policy is to return the atom `:ok`. [Anything else is a policy failure](#module-policy-failures).
 
-The first parameter `Map` of the resources being evaluated. When called by a plug, this is the assigns map from the current `%Plug.Conn{}`. The second parameter is the policy data you specified when using the PolicyWonk.Enforce plug. If you used EnforceAction, then the second parameter is simply the atom representing the current action.
+The :current_user policy in the above module checks if a User map is assigned in the conn
+if yes, then the policy succeeds. If not, then it fails.
 
-The idea is that you define multiple policy functions and use Elixir’s pattern matching to find the right one. If you use a tuple (or a map) as the second parameter, then you can have more complex calls to your policies.
+You create policies that can check anything you want. In the end it will return either :ok
+or {:error, message} to indicate success or fail.
 
-      def policy( assigns, {:user_permission, perms} ) when is_list(perms) do
+These policies are, in turn, enforced in a plug or the other helper functions that
+are provided. (described below)
+
+In general, if a policy that is being enforced in the plug chain fails, it halts the plug
+and handles the error before the request controller action is ever run. This front-loads
+the authorization checks and lets you apply them to many controller/actions using router
+pipelines as a choke point.
+
+## Usage
+
+The only way you should directly use the `PolicyWonk.Policy` module is to call
+`use PolicyWonk.Policy` when defining your policy module.
+
+`use PolicyWonk.Policy` injects the `enforce/2`, `enforce!/2`, and `authorized?/2`
+functions into your Policy modules. These run and evaluate your policies and act
+accordingly on the results.
+
+**It is expected that you will primarily use the `enforce/2`, `enforce!/2`,
+and `authorized?/2 functions in your Policy module.** These injected functions, prepare
+and call the `enforce/3`, `enforce!/3`, and `authorized?/3 functions in this module which
+are presented here for completeness.
+
+Example Policy Module:
+
+      defmodule MyAppWeb.Policies do
+        use PolicyWonk.Policy         # set up support for policies
+        use PolicyWonk.Enforce        # turn this module into an enforcement plug
+
+        def policy( assigns, :current_user ) do
+          case assigns[:current_user] do
+            %MyApp.Account.User{} ->
+              :ok
+            _ ->
+              {:error, :current_user}
+          end
+        end
+
+        def policy_error(conn, :current_user) do
+          MyAppWeb.ErrorHandlers.unauthenticated(conn, "Must be logged in")
+        end
+      end
+
+# Policies
+
+A policy is a function that makes a simple yes/no decision. It is given the assigns field from
+the current conn, and term that identifies the policy and optionally passes in any other
+data you may need. 
+
+The idea is that you define multiple policy functions and rely on Elixir’s pattern matching
+to find the right one. If you use a tuple (or a map - or whatever) as the second parameter, then you can 
+have more complex calls to your policies.
+
+      def policy( assigns, {:permission, perms} ) when is_list(perms) do
         case assigns.current_user.permissions do
-          nil -> {:user_perm, perms}        # Fail. No permissions
+          nil -> {:error, :unauthorized}        # Fail. No permissions
           user_perms ->
             Enum.all?(perms, fn(p) -> Enum.member?(user_perms, to_string(p)) end)
             |> case do
               true -> :ok                   # Success.
-              false -> {:user_perm, perms}  # Fail. Permission missing
+              false -> {:error, :unauthorized}  # Fail. Permission missing
             end
         end
       end
@@ -34,11 +86,23 @@ The idea is that you define multiple policy functions and use Elixir’s pattern
         policy( assigns, {:user_perm, [one_perm]} )
 
 
-The policy `{:user_permission, perms}` is the most complex individual policy I use. The first element of the incoming type is an atom to allow Elixir to pattern match to right function. The second element is a list of strings that should be present on the user’s permissions field. 
+The {:permission, perms} policy gets a permissions list from the :current_user field that
+has already been assigned. I am assuming that the policy :current_user is enforced before
+this one, so that fails, the {:permission, perms} policy won't be called.
 
-Since I use the `{:user_permission, perms}` policy on multiple controllers (and the router!) I keep it in a central `lib/policy_wonk/policies.ex` file, which I point to in the configuration data.
+This is the one of the most complex policies I use. By passing in {:permission, perms}
+to identify the policy, I rely on Elixir to match on the :permission atom and can pass
+aditional data through the perms term.
 
-**Note**: when you attach permissions to a user record in you DB, *please* use something like [Cloak](https://hex.pm/packages/cloak) to encrypt those values.
+It is typically called like this
+
+      plug MyAppWeb.Policies, {:permission, "dashboard"}
+      # or
+      plug MyAppWeb.Policies, {:permission, ["dashboard", "premium"]}
+
+
+**Note**: when you attach permissions to a user record in you DB, *please* use something
+like [Cloak](https://hex.pm/packages/cloak) to encrypt those values.
 
 ## Use outside the plug chain
 Policies are usually called from one of the enforce plugs, but can also be used to decide if a user has permission to see a piece of UI and some other thing.

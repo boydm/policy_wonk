@@ -231,7 +231,7 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
     case module.load_resource(conn, resource, conn.params) do
       {:ok, _, resource} ->
         resource
-      {:error, resource,message} ->
+      {:error, resource, message} ->
         raise_error(message, module, resource )
       _ ->
         raise_error(@format_error, module, resource )

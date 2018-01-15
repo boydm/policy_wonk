@@ -12,6 +12,7 @@ before_script:
 
 script:
   - mix test
+  - mix credo
 
 after_script:
   - MIX_ENV=docs mix deps.get

@@ -147,17 +147,9 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
   # load a list of resources, asynchronously
   def load(%Plug.Conn{} = conn, module, resources, true) when is_list(resources) do
     # spin up tasks for all the loads
-    Enum.map(resources, fn(resource) ->
-      Task.async( fn ->
-        case module.load_resource(conn, resource, conn.params) do
-          {:ok, key, resource} ->
-            {:ok, key, resource}
-          {:error, message} ->
-            {:error, message}
-          _ ->
-            raise_error(@format_error, module, resource )
-        end
-      end)
+    resources
+    |> Enum.map(fn(resource) ->
+      Task.async( fn -> call_load_resource(conn, module, resource) end)
     end)
     # wait for the async tasks to complete - assigning each into the conn
     |> Enum.reduce_while( conn, fn (task, acc_conn )->
@@ -173,7 +165,6 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
       end
     end)
   end
-
 
   # load a single resource
   def load(%Plug.Conn{} = conn, module, resource, _) do
@@ -194,7 +185,8 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
 
   # load! a list of resources, synchronously
   def load!(%Plug.Conn{} = conn, module, resources, false) when is_list(resources) do
-    Enum.reduce(resources, [], fn(resource, acc) ->
+    resources
+    |> Enum.reduce([], fn(resource, acc) ->
       [ {resource, load!(conn, module, resource)} | acc ]
     end)
     |> Enum.reverse()
@@ -202,18 +194,10 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
 
   # load! a list of resources, asynchronously
   def load!(%Plug.Conn{} = conn, module, resources, true) when is_list(resources) do
-    # spin up tasks for all the loads
-    Enum.map(resources, fn(resource) ->
-      Task.async( fn ->
-        case module.load_resource(conn, resource, conn.params) do
-          {:ok, key, resource} ->
-            {:ok, key, resource}
-          {:error, message} ->
-            {:error, resource, message}
-          _ ->
-            raise_error(@format_error, module, resource )
-        end
-      end)
+    # spin up tasks for all the resources
+    resources
+    |> Enum.map(fn(resource) ->
+      Task.async( fn -> call_load_resource(conn, module, resource) end)
     end)
     # wait for the async tasks to complete - assigning each into the conn
     |> Enum.reduce_while( [], fn (task, acc )->
@@ -228,17 +212,30 @@ You can also specify the loader’s module when you invoke the `PolicyWonk.LoadR
 
   # load! a single resource
   def load!(%Plug.Conn{} = conn, module, resource, _) do
-    case module.load_resource(conn, resource, conn.params) do
+    case call_load_resource(conn, module, resource) do
       {:ok, _, resource} ->
         resource
       {:error, resource, message} ->
         raise_error(message, module, resource )
+    end
+  end
+
+  #============================================================================
+
+  #--------------------------------------------------------
+  defp call_load_resource(conn, module, resource) do
+    case module.load_resource(conn, resource, conn.params) do
+      {:ok, key, resource} ->
+        {:ok, key, resource}
+      {:error, message} ->
+        {:error, message}
       _ ->
         raise_error(@format_error, module, resource )
     end
   end
 
-  #----------------------------------------------------------------------------
+
+  #--------------------------------------------------------
   defp raise_error(message, module, resource ) do
     message = message <> "\n" <>
     "#{IO.ANSI.green}module: #{IO.ANSI.yellow}#{inspect(module)}\n" <>

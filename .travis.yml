@@ -1,11 +1,6 @@
 language: elixir
 sudo: false
 
-branches:
-  only:
-    - master
-    - development
-
 before_script:
   - mix local.hex --force
   - mix deps.get --only test

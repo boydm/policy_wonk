@@ -1,4 +1,4 @@
-defmodule PolicyWonk.Loader do
+defmodule PolicyWonk.Resource do
   @moduledoc """
 
   # Overview
@@ -8,7 +8,7 @@ defmodule PolicyWonk.Loader do
 
     A simple resource loader:
 
-      def load_resource( _conn, :user, %{"id" => user_id} ) do
+      def resource( _conn, :user, %{"id" => user_id} ) do
         case MyAppWeb.Account.get_user(user_id) do
           nil ->  {:error, :not_found}
           user -> {:ok, :user, user}
@@ -24,11 +24,11 @@ defmodule PolicyWonk.Loader do
 
   ## Usage
 
-  The only time you should directly use the `PolicyWonk.Loader` module is to call
-  `use PolicyWonk.Loader` when defining your resource loader module.
+  The only time you should directly use the `PolicyWonk.Resource` module is to call
+  `use PolicyWonk.Resource` when defining your resource loader module.
 
-  `use PolicyWonk.Loader` injects the `load/3`, `load!/3`, functions into your loader modules.
-  These run and evaluate your load_resource functions and act accordingly on the results.
+  `use PolicyWonk.Resource` injects the `load/3`, `load!/3`, functions into your loader modules.
+  These run and evaluate your resource functions and act accordingly on the results.
 
   Loading resources during the plug chain has several important benefits:
 
@@ -39,12 +39,12 @@ defmodule PolicyWonk.Loader do
   * It lets you enforce policies on the resources before your actions are called. The best way to
   avoid security mistakes is to never run that code in the first place.
    
-  The *only* way to indicate success from a `load_resource` function is to return a tuple such as
+  The *only* way to indicate success from a `resource` function is to return a tuple such as
   `{:ok, key, resource}`. The first field in the tuple must be `:ok` to indicate success. The middle
   field is the name of the resource as you want it assigned into `conn.assigns`. The last field
   is the resource itself.
 
-  The idea is that you define multiple `load_resource` functions and use Elixir’s pattern matching to
+  The idea is that you define multiple `resource` functions and use Elixir’s pattern matching to
   find the right one. Like policies, this loader name could be an atom, tuple, map or really
   anything Elixir/Erlang can match against.
 
@@ -58,11 +58,11 @@ defmodule PolicyWonk.Loader do
 
   Example resource loader module:
 
-        defmodule MyAppWeb.Loaders do
-          use PolicyWonk.Loader           # set up support for resources
-          use PolicyWonk.LoadResource     # turn this module into an resource loading into a plug
+        defmodule MyAppWeb.Resources do
+          use PolicyWonk.Resource       # set up support for resources
+          use PolicyWonk.Load           # turn this module into an resource loading into a plug
 
-          def load_resource( _conn, :user, %{"id" => user_id} ) do
+          def resource( _conn, :user, %{"id" => user_id} ) do
             case MyAppWeb.Account.get_user(user_id) do
               nil ->  {:error, :not_found}
               user -> {:ok, :user, user}
@@ -77,14 +77,14 @@ defmodule PolicyWonk.Loader do
 
   ## Injected functions
 
-  When you call `use PolicyWonk.Loader`, the following functions are injected into your module.
+  When you call `use PolicyWonk.Resource`, the following functions are injected into your module.
 
   ### load/3
 
   `load(conn, resource, async \\ false)`
 
   Callable as a local plug. Load accepts the current conn and a resource indicator.
-  It then calls the load_resource function, evaluates the response and either
+  It then calls the resource function, evaluates the response and either
   puts the result into conn.assigns or transforms the conn with a failure.
 
   You will normally only use this function if you want to enforce a policy that is
@@ -93,7 +93,7 @@ defmodule PolicyWonk.Loader do
         plug :load, :some_resource
 
 
-  If you want to enforce a policy from your router, please read the `PolicyWonk.LoadResource`
+  If you want to enforce a policy from your router, please read the `PolicyWonk.Load`
   documentation.
 
   parameters:
@@ -109,8 +109,8 @@ defmodule PolicyWonk.Loader do
 
   `load!(conn, resource, async \\ false)`
 
-  Loads a resource and returns it. Raises the load_resource function returns {:error, message}.
-  This is a handy way to use your load_resource functions from within an action in a controller.
+  Loads a resource and returns it. Raises when the `resource` function returns `{:error, message}`.
+  This is a handy way to use your `resource` functions from within an action in a controller.
 
   If multiple resources are requested the loaded resources are returned in a list of tuples
   indicating which resources are which.
@@ -132,11 +132,11 @@ defmodule PolicyWonk.Loader do
 
   To gracefully handle a load error, return a `{:error, message}` tuple.
 
-  `PolicyWonk.LoadResource` will then cease attempting to load other resources and call your
-  `load_error(conn, message)` function. The `message` parameter is what you returned from your
-  `load_resource` function.
+  `PolicyWonk.Load` will then cease attempting to load other resources and call your
+  `resource_error(conn, message)` function. The `message` parameter is what you returned from your
+  `resource` function.
 
-      def load_error(conn, message) do
+      def resource_error(conn, message) do
         conn
         |> put_status(404)
         |> put_view(MyApp.ErrorView)
@@ -144,13 +144,13 @@ defmodule PolicyWonk.Loader do
         |> halt()
       end
 
-  The `load_error` function works just like a regular plug function. It takes a `conn`, and
+  The `resource_error` function works just like a regular plug function. It takes a `conn`, and
   whatever was returned from the loader. You can manipulate the `conn` however you want to
   respond to that error. Then return the `conn`.
 
   Unlike handling a policy error, `halt(conn)` is not called for you. If you want the
   resource load failure to halt the plug chain, make sure to call `halt(conn)` in your
-  load_error function.
+  `resource_error` function.
 
   Sometimes you want the plug chain to continue with a nil resource...
 
@@ -166,7 +166,7 @@ defmodule PolicyWonk.Loader do
         def settings(conn, params) do
           ...
           # raise an error if the resource fails to load.
-          resource = MyAppWeb.Loaders.load!(conn, :some_resource)
+          resource = MyAppWeb.Resources.load!(conn, :some_resource)
           ...
         end
 
@@ -174,7 +174,7 @@ defmodule PolicyWonk.Loader do
   ## Loader Locations
 
   You can build as many Loader modules as you want in multiple umbrella applications. Simply
-  call `use PolicyWonk.Loader` to add the support functions to your module. Call `use PolicyWonk.LoadResource`
+  call `use PolicyWonk.Resource` to add the support functions to your module. Call `use PolicyWonk.Load`
   to make your module a plug that can be called in the router.
 
   """
@@ -191,17 +191,17 @@ defmodule PolicyWonk.Loader do
   ## Return values
 
   Must return either {:ok, key, resource} or {:error, message}. If it is an error, the message term will be pass on
-  you your load_error callback unchanged.
+  you your resource_error callback unchanged.
 
   Example:
-        def load_resource( _conn, :user, %{"id" => user_id} ) do
+        def resource( _conn, :user, %{"id" => user_id} ) do
           case Repo.get(Account.User, user_id) do
             nil ->  {:error, "User not found"}
             user -> {:ok, :user, user}
           end
         end
   """
-  @callback load_resource(conn :: Plug.Conn.t(), resource :: any, params :: Map.t()) :: {:ok, atom, any} | {:error, any}
+  @callback resource(conn :: Plug.Conn.t(), resource :: any, params :: Map.t()) :: {:ok, atom, any} | {:error, any}
 
   @doc """
   Handle a resource load error. Only called during the plug chain.
@@ -210,10 +210,10 @@ defmodule PolicyWonk.Loader do
 
   ## parameters
   * `conn`, the current conn in the plug chain. Transform this to handle the error.
-  * `error_data`, the `error_data` returned from your load_resource function.
+  * `message`, the `message` returned from your `resource` function.
 
   Example:
-        def load_error(conn, err_data) do
+        def resource_error(conn, message) do
           conn
           |> put_status(404)
           |> put_view(MyApp.ErrorView)
@@ -222,9 +222,9 @@ defmodule PolicyWonk.Loader do
         end
     
   Unlike policies, if you want to halt the plug chain on a resource load error, you
-  must call halt() yourself during the load_error function.
+  must call halt() yourself during the `resource_error` function.
   """
-  @callback load_error(conn :: Plug.Conn.t(), message :: any) :: Plug.Conn.t()
+  @callback resource_error(conn :: Plug.Conn.t(), message :: any) :: Plug.Conn.t()
 
   @format_error "Loaders must return either {:ok, key, resource} or an {:error, message}"
 
@@ -238,7 +238,7 @@ defmodule PolicyWonk.Loader do
   # ===========================================================================
   defmacro __using__(_use_opts) do
     quote do
-      @behaviour PolicyWonk.Loader
+      @behaviour PolicyWonk.Resource
 
       # ----------------------------------------------------
       @doc """
@@ -250,17 +250,17 @@ defmodule PolicyWonk.Loader do
             plug :load, :some_resource
 
 
-      If you want to load a resource from your router, please read the `PolicyWonk.LoadResource`
+      If you want to load a resource from your router, please read the `PolicyWonk.Load`
       documentation.
 
       ## Parameters
       * `conn` The current conn in the plug chain
-      * `resoruce` The resource or resources you want to load. This can be either a single
+      * `resource` The resource or resources you want to load. This can be either a single
       term representing one resource, or a list of resource terms.
       * `async` flag indicating if a list of resources should be loaded asynchronously.
       """
       def load(conn, resources, async \\ false) do
-        PolicyWonk.Loader.load(conn, __MODULE__, resources, async)
+        PolicyWonk.Resource.load(conn, __MODULE__, resources, async)
       end
 
       # ----------------------------------------------------
@@ -272,25 +272,25 @@ defmodule PolicyWonk.Loader do
             def settings(conn, params) do
               ...
               # raise an error if the resource fails to load.
-              resource = MyAppWeb.Loaders.load!(conn, :some_resource)
+              resource = MyAppWeb.Resources.load!(conn, :some_resource)
               ...
             end
 
       If multiple resources are requested, they will be returned in a list of tuples.
 
-            MyAppWeb.Loaders.load!(conn, [:thing_a, :thing_b])
+            MyAppWeb.Resources.load!(conn, [:thing_a, :thing_b])
             # would return something like
             [{:thing_a, thing_a}, {:thing_b, thing_b}]
 
       ## Parameters
       * `conn` The current conn in the plug chain
-      * `resoruce` The resource or resources you want to load. This can be either a single
+      * `resource` The resource or resources you want to load. This can be either a single
       term representing one resource, or a list of resource terms.
       * `async` flag indicating if a list of resources should be loaded asynchronously.
       """
 
       def load!(conn, resources, async \\ false),
-        do: PolicyWonk.Loader.load!(conn, __MODULE__, resources, async)
+        do: PolicyWonk.Resource.load!(conn, __MODULE__, resources, async)
     end
   end
 
@@ -313,7 +313,7 @@ defmodule PolicyWonk.Loader do
     # wait for the async tasks to complete - assigning each into the conn
     resources
     |> Enum.map(fn resource ->
-      Task.async(fn -> call_load_resource(conn, module, resource) end)
+      Task.async(fn -> do_load_resource(conn, module, resource) end)
     end)
     |> Enum.reduce_while(conn, fn task, acc_conn ->
       case Task.await(task) do
@@ -322,7 +322,7 @@ defmodule PolicyWonk.Loader do
 
         {:error, message} ->
           # handle the error
-          acc_conn = module.load_error(acc_conn, message)
+          acc_conn = module.resource_error(acc_conn, message)
           {:cont, acc_conn}
       end
     end)
@@ -330,13 +330,13 @@ defmodule PolicyWonk.Loader do
 
   # load a single resource
   def load(%Plug.Conn{} = conn, module, resource, _) do
-    case module.load_resource(conn, resource, conn.params) do
+    case module.resource(conn, resource, conn.params) do
       {:ok, key, resource} ->
         Plug.Conn.assign(conn, key, resource)
 
       {:error, message} ->
         # handle the error
-        module.load_error(conn, message)
+        module.resource_error(conn, message)
     end
   end
 
@@ -360,7 +360,7 @@ defmodule PolicyWonk.Loader do
     # wait for the async tasks to complete - assigning each into the conn
     resources
     |> Enum.map(fn resource ->
-      Task.async(fn -> call_load_resource(conn, module, resource) end)
+      Task.async(fn -> do_load_resource(conn, module, resource) end)
     end)
     |> Enum.reduce_while([], fn task, acc ->
       case Task.await(task) do
@@ -375,7 +375,7 @@ defmodule PolicyWonk.Loader do
 
   # load! a single resource
   def load!(%Plug.Conn{} = conn, module, resource, _) do
-    case module.load_resource(conn, resource, conn.params) do
+    case module.resource(conn, resource, conn.params) do
       {:ok, _, resource} ->
         resource
 
@@ -390,8 +390,8 @@ defmodule PolicyWonk.Loader do
   # ============================================================================
 
   # --------------------------------------------------------
-  defp call_load_resource(conn, module, resource) do
-    case module.load_resource(conn, resource, conn.params) do
+  defp do_load_resource(conn, module, resource) do
+    case module.resource(conn, resource, conn.params) do
       {:ok, key, resource} ->
         {:ok, key, resource}
 

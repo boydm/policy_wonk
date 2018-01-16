@@ -16,6 +16,7 @@ defmodule PolicyWonk do
   typing) were always clearer.
   * Returning errors from Policies was too vague. I want to know errors are being processed!
   * The config file data isn't necessary in a more explicit model.
+  * Naming was inconsistent between policies and resources.
 
   Version 1.0 takes these observations (and more), fixes them, and simplifies the configuration
   dramatically. It has less code and is overall simpler and faster.
@@ -38,8 +39,8 @@ defmodule PolicyWonk do
   Load and enforce a current user in a router:
 
         pipeline :browser_session do
-          plug MyAppWeb.Loaders, :current_user
-          plug MyAppWeb.Policies, :current_user
+          plug MyAppWeb.Resources,  :current_user
+          plug MyAppWeb.Policies,   :current_user
         end
         
         pipeline :admin do
@@ -91,9 +92,9 @@ defmodule PolicyWonk do
   into the conn's `assigns` map.
 
 
-        defmodule MyAppWeb.Loaders do
-          use PolicyWonk.Loader         # set up support for loaders
-          use PolicyWonk.LoadResource   # turn this module into an load resource plug
+        defmodule MyAppWeb.Resources do
+          use PolicyWonk.Resource       # set up support for loaders
+          use PolicyWonk.Load           # turn this module into an load resource plug
 
           def load_resource( _conn, :user, %{"id" => user_id} ) do
             case MyApp.Account.get_user(user_id) do
@@ -107,7 +108,7 @@ defmodule PolicyWonk do
           end
         end
 
-  See the the `PolicyWonk.Loader` documentation for details.
+  See the the `PolicyWonk.Resource` documentation for details.
 
 
   # Behaviours
@@ -115,7 +116,7 @@ defmodule PolicyWonk do
   PolicyWonk defines two behaviours for creating policies and resource loaders.
 
   * `PolicyWonk.Policy` Callbacks for defining a policy and handling policy failures.
-  * `PolicyWonk.Loader` Callbacks for defining a resource loader and handing load failures.
+  * `PolicyWonk.Resource` Callbacks for defining a resource loader and handing load failures.
 
   # Policies outside plugs
 
@@ -151,9 +152,17 @@ defmodule PolicyWonk do
 
   # Upgrading to version 1.0
 
+  ## Module Names
+
+  The two resource loading modules have been renamed to make them more consistent with policies.
+
+  PolicyWonk.LoadResource ->    PolicyWonk.Load
+  PolicyWonk.Loader ->          PolicyWonk.Resource
+  
+
   ## Using policies and Loaders
 
-  You no longer directly call `PolicyWonk.Policy` and `PolicyWonk.LoadResource` as plugs
+  You no longer directly call `PolicyWonk.Policy` and `PolicyWonk.Load` as plugs
   from your router.
 
   After using them in your policy modules, call ***your*** module in the router. This lets you be
@@ -164,13 +173,13 @@ defmodule PolicyWonk do
 
         # Old. Don't do this
         # pipeline :browser_session do
-        #   plug PolicyWonk.LoadResource, :current_user
+        #   plug PolicyWonk.Load, :current_user
         #   plug PolicyWonk.Enforce, :current_user
         # end
 
         # New. Do this
         pipeline :browser_session do
-          plug MyAppWeb.Loaders, :current_user
+          plug MyAppWeb.Resources, :current_user
           plug MyAppWeb.Policies, :current_user
         end
 

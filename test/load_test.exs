@@ -1,27 +1,27 @@
-defmodule PolicyWonk.LoadResourceTest do
+defmodule PolicyWonk.LoadTest do
   use ExUnit.Case, async: true
-  alias PolicyWonk.LoadResource
+  alias PolicyWonk.Load
   doctest PolicyWonk
 
   #  import IEx
 
   defmodule ModA do
-    use PolicyWonk.LoadResource
-    use PolicyWonk.Loader
+    use PolicyWonk.Load
+    use PolicyWonk.Resource
 
-    def load_resource(_conn, :a, _params) do
+    def resource(_conn, :a, _params) do
       {:ok, :thing_a, "thing_a"}
     end
 
-    def load_resource(_conn, :b, _params) do
+    def resource(_conn, :b, _params) do
       {:ok, :thing_b, "thing_b"}
     end
 
-    def load_resource(_conn, :invalid, _params) do
+    def resource(_conn, :invalid, _params) do
       {:error, "invalid"}
     end
 
-    def load_error(conn, "invalid") do
+    def resource_error(conn, "invalid") do
       conn
       |> Plug.Conn.put_status(404)
       |> Plug.Conn.halt()
@@ -49,7 +49,7 @@ defmodule PolicyWonk.LoadResourceTest do
 
   # ----------------------------------------------------------------------------
   test "use init raises on empty resources list" do
-    assert_raise PolicyWonk.LoadResource.Error, fn -> ModA.init(resources: []) end
+    assert_raise PolicyWonk.Load.Error, fn -> ModA.init(resources: []) end
   end
 
   # ============================================================================
@@ -57,7 +57,7 @@ defmodule PolicyWonk.LoadResourceTest do
 
   # --------------------------------------------------------
   test "init sets up policies with defaults" do
-    assert LoadResource.init(resources: [:a, :b], resource_module: ModA) == %{
+    assert Load.init(resources: [:a, :b], resource_module: ModA) == %{
              resources: [:a, :b],
              resource_module: ModA,
              async: false
@@ -66,7 +66,7 @@ defmodule PolicyWonk.LoadResourceTest do
 
   # --------------------------------------------------------
   test "init accepts a single policy" do
-    assert LoadResource.init(resources: :a, resource_module: ModA) == %{
+    assert Load.init(resources: :a, resource_module: ModA) == %{
              resources: [:a],
              resource_module: ModA,
              async: false
@@ -75,8 +75,8 @@ defmodule PolicyWonk.LoadResourceTest do
 
   # --------------------------------------------------------
   test "init raises on empty policies list" do
-    assert_raise PolicyWonk.LoadResource.Error, fn ->
-      LoadResource.init(resources: [], resource_module: ModA)
+    assert_raise PolicyWonk.Load.Error, fn ->
+      Load.init(resources: [], resource_module: ModA)
     end
   end
 
@@ -108,19 +108,19 @@ defmodule PolicyWonk.LoadResourceTest do
   # --------------------------------------------------------
   test "call uses the requested loader on the requested module", %{conn: conn} do
     opts = %{resources: [:a], resource_module: ModA, async: false}
-    %Plug.Conn{halted: false} = LoadResource.call(conn, opts)
+    %Plug.Conn{halted: false} = Load.call(conn, opts)
   end
 
   # --------------------------------------------------------
   test "call halts the plug chain on a failure", %{conn: conn} do
     opts = %{resources: [:invalid], resource_module: ModA, async: false}
-    %Plug.Conn{halted: true} = LoadResource.call(conn, opts)
+    %Plug.Conn{halted: true} = Load.call(conn, opts)
   end
 
   # ----------------------------------------------------------------------------
   test "call handles load errors", %{conn: conn} do
     opts = %{resources: [:invalid], resource_module: ModA, async: false}
-    conn = LoadResource.call(conn, opts)
+    conn = Load.call(conn, opts)
     assert conn.status == 404
   end
 end

@@ -13,7 +13,7 @@ defmodule PolicyWonk.Enforce do
           use MyApp.Web, :router
 
           pipeline :browser_session do
-            plug PolicyWonk.LoadResource, :current_user
+            plug PolicyWonk.Load, :current_user
             plug PolicyWonk.Enforce, :current_user
           end
           

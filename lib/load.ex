@@ -108,7 +108,7 @@ defmodule PolicyWonk.Load do
         |> init()
 
       false ->
-        do_init( module, resources_or_opts, false)
+        do_init(module, resources_or_opts, false)
     end
   end
 

@@ -2,7 +2,7 @@ defmodule PolicyWonk.Resource do
   @moduledoc """
 
   # Overview
-  
+
   A resource loader is a function that loads (or prepares) a single resource. The result is put
   into the conn's assigns field.
 
@@ -216,7 +216,8 @@ defmodule PolicyWonk.Resource do
           end
         end
   """
-  @callback resource(conn :: Plug.Conn.t(), resource :: any, params :: Map.t()) :: {:ok, atom, any} | {:error, any}
+  @callback resource(conn :: Plug.Conn.t(), resource :: any, params :: Map.t()) ::
+              {:ok, atom, any} | {:error, any}
 
   @doc """
   Handle a resource load error. Only called during the plug chain.

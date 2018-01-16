@@ -158,7 +158,7 @@ defmodule PolicyWonk do
 
   PolicyWonk.LoadResource ->    PolicyWonk.Load
   PolicyWonk.Loader ->          PolicyWonk.Resource
-  
+
 
   ## Using policies and Loaders
 

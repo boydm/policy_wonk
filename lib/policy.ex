@@ -99,7 +99,7 @@ defmodule PolicyWonk.Policy do
   term representing one policy, or a list of policy terms.
 
   ### authorized/2
-  
+
   `authorized?/2`
 
   Evaluates one or more policies and either returns `true` (success) or `false` (failure).
@@ -220,7 +220,7 @@ defmodule PolicyWonk.Policy do
   you choose how to handle the error.
 
   You should define at least one `policy_error` function in same place you put your policies.
-  
+
   Example:
 
         def policy_error(conn, err_data) do
@@ -249,7 +249,7 @@ defmodule PolicyWonk.Policy do
   * `conn` The first parameter is the current Plug.Conn object.
   * `identifier` The second is any term you want to either identify the policy or pass data.
   """
-  @callback policy(conn :: Plug.Conn.t, identifier :: any) :: :ok | {:error, any}
+  @callback policy(conn :: Plug.Conn.t(), identifier :: any) :: :ok | {:error, any}
 
   @doc """
   Handle a failed policy. Only called during the plug chain.
@@ -263,8 +263,6 @@ defmodule PolicyWonk.Policy do
   """
 
   @callback policy_error(conn :: Plug.Conn.t(), message :: any) :: Plug.Conn.t()
-
-
 
   @format_error "Policies must return either :ok or an {:error, message} tuple"
 
@@ -303,7 +301,6 @@ defmodule PolicyWonk.Policy do
       def enforce(conn, policies) do
         PolicyWonk.Policy.enforce(conn, __MODULE__, policies)
       end
-
 
       # ----------------------------------------------------
       @doc """

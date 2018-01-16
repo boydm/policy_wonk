@@ -159,6 +159,11 @@ defmodule PolicyWonk do
   PolicyWonk.LoadResource ->    PolicyWonk.Load
   PolicyWonk.Loader ->          PolicyWonk.Resource
 
+  Likewise, within a resoruce module the following callback names have changed.
+
+  load_resource ->  resource
+  load_error ->     resource_error
+
 
   ## Using policies and Loaders
 

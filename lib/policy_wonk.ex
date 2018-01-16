@@ -156,13 +156,38 @@ defmodule PolicyWonk do
 
   The two resource loading modules have been renamed to make them more consistent with policies.
 
-  PolicyWonk.LoadResource ->    PolicyWonk.Load
-  PolicyWonk.Loader ->          PolicyWonk.Resource
+  `PolicyWonk.LoadResource` is now `PolicyWonk.Load`
+
+  `PolicyWonk.Loader` is now `PolicyWonk.Resource`
+
+        # Old. Don't do this
+        # defmodule MyAppWeb.Resources
+        #   use PolicyWonk.Loader
+
+        # New. Do this
+        defmodule MyAppWeb.Resources
+          use PolicyWonk.Resources
+          use PolicyWonk.Load
+
 
   Likewise, within a resource module the following callback names have changed.
 
-  load_resource ->  resource
-  load_error ->     resource_error
+  `load_resource` is now `resource`
+  
+  `load_error` is now `resource_error`
+
+
+        # Old. Don't do this
+        # def load_resource do
+        #    ...
+        # def load_error do
+        #    ...
+
+        # New. Do this
+        def resource do
+          ...
+        def resource_error do
+          ...
 
 
   ## Using policies and Loaders

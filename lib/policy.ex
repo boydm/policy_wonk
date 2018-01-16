@@ -3,7 +3,10 @@ defmodule PolicyWonk.Policy do
 
   # Overview
 
-  A policy is a function that makes a simple yes/no decision.
+  A policy is a function that makes a simple yes/no decision. This descision can then be
+  inserted into your pluch chain to enforce authorization rules at the router.
+
+  Simple policy example:
 
         # ensure a user is signed in
         def policy( assigns, :current_user ) do
@@ -29,17 +32,12 @@ defmodule PolicyWonk.Policy do
 
   ## Usage
 
-  The only way you should directly use the `PolicyWonk.Policy` module is to call
+  The only time you should directly use the `PolicyWonk.Policy` module is to call
   `use PolicyWonk.Policy` when defining your policy module.
 
   `use PolicyWonk.Policy` injects the `enforce/2`, `enforce!/2`, and `authorized?/2`
   functions into your Policy modules. These run and evaluate your policies and act
   accordingly on the results.
-
-  **It is expected that you will primarily use the `enforce/2`, `enforce!/2`,
-  and `authorized?/2 functions in your Policy module.** These injected functions, prepare
-  and call the `enforce/3`, `enforce!/3`, and `authorized?/3 functions in this module which
-  are presented here for completeness.
 
   Example Policy Module:
 
@@ -61,6 +59,59 @@ defmodule PolicyWonk.Policy do
           end
         end
 
+  ## Injected functions
+
+  When you call `use PolicyWonk.Policy`, the following functions are injected into your module.
+
+  ### enforce/2
+
+  `enforce(conn, policy)`
+
+  Callable as a local plug. Enforce accepts the current conn and a policy indicator.
+  It then calls the policy, evaluates the response and either passes or transforms
+  the conn with a failure.
+
+  You will normally only use this function if you want to enforce a policy that is
+  written into a controller. Then the plug call will look like this:
+
+        plug :enforce, :some_policy
+
+
+  If you want to enforce a policy from your router, please read the `PolicyWonk.Enforce`
+  documentation.
+
+  parameters:
+
+  * `conn` The current conn in the plug chain
+  * `policy` The policy or policies you want to enforce. This can be either a single
+  term representing one policy, or a list of policy terms.
+
+  ### enforce!/2
+
+  `enforce!/2`
+
+  Evaluates one or more policies and either returns :ok (success) or raises an error.
+
+  This is useful for enforcing a policy within an action in a controller.
+
+  * `conn` The current conn in the plug chain
+  * `policy` The policy or policies you want to enforce. This can be either a single
+  term representing one policy, or a list of policy terms.
+
+  ### authorized/2
+  
+  `authorized?/2`
+
+  Evaluates one or more policies and either returns `true` (success) or `false` (failure).
+
+  This is useful for choosing whether or not to render portions of a template, or for
+  conditional logic in a controller.
+
+  * `conn` The current conn in the plug chain
+  * `policy` The policy or policies you want to enforce. This can be either a single
+  term representing one policy, or a list of policy terms.
+
+
   # Policies
 
   A policy is a function that makes a simple yes/no decision. It is given the assigns field from
@@ -70,6 +121,9 @@ defmodule PolicyWonk.Policy do
   The idea is that you define multiple policy functions and rely on Elixir’s pattern matching
   to find the right one. If you use a tuple (or a map - or whatever) as the second parameter, then you can 
   have more complex calls to your policies.
+
+  The following example, checks to see if a given permission (or list of permissions) are
+  present in a permissions field for the current user.
 
         def policy( assigns, {:permission, perms} ) when is_list(perms) do
           case assigns.current_user.permissions do
@@ -86,15 +140,15 @@ defmodule PolicyWonk.Policy do
           policy( assigns, {:user_perm, [one_perm]} )
 
 
-  The {:permission, perms} policy gets a permissions list from the :current_user field that
-  has already been assigned. I am assuming that the policy :current_user is enforced before
-  this one, so that fails, the {:permission, perms} policy won't be called.
+  The `{:permission, perms}` policy gets a permissions list from the `:current_user` field that
+  has already been assigned. I am assuming that the policy `:current_user` is enforced before
+  this one, so that fails, the `{:permission, perms}` policy won't be called.
 
-  This is the one of the most complex policies I use. By passing in {:permission, perms}
-  to identify the policy, I rely on Elixir to match on the :permission atom and can pass
-  aditional data through the perms term.
+  This is the one of the most complex policies I use. By passing in `{:permission, perms}`
+  to identify the policy, I rely on Elixir to match on the `:permission` atom. I can then pass
+  aditional data through the `perms` term.
 
-  It is typically called like this
+  This policy is typically enforced like this:
 
         plug MyAppWeb.Policies, {:permission, "dashboard"}
         # or
@@ -104,16 +158,46 @@ defmodule PolicyWonk.Policy do
   **Note**: when you attach permissions to a user record in you DB, *please* use something
   like [Cloak](https://hex.pm/packages/cloak) to encrypt those values.
 
-  ## Use outside the plug chain
-  Policies are usually called from one of the enforce plugs, but can also be used to decide if a user has permission to see a piece of UI and some other thing.
+  # Return Values
 
-  You can evaluate policies within templates, actions, and other code by using the `authorized?` function. [See documentation for `PolicyWonk.Enforce` for details](PolicyWonk.Enforce.html#module-evaluating-policies-outside-of-the-plug).
+  Policies return either :ok (indicating success) or {:error, message} (indicating failure).
+
+  When being enforced via a plug, return :ok allows the plug chain to continue unchanged.
+
+  Returning `{:error, message}` halts the plug chain and sends the message to your `policy_error`
+  function. This is where you can choose how to handle the error. Perhaps by redirectying,
+  signing the user out, or some other action.
+
+
+  ## Use outside the plug chain
+
+  Policies are usually enforced through a plug, but can also be used to decide if a user has
+  permission to see a piece of UI or can use some othe functionality.
+
+  In a template:
+
+        <%= if MyAppWeb.Policies.authorized?(@conn, {:admin_permission, "dashbaord"}) do %>
+          <%= link "Admin Dashboard", to: admin_dashboard_path(@conn, :index) %>
+        <% end %>
+
+  In an action in a controller:
+
+        def settings(conn, params) do
+          ...
+          # raise an error if the current user is not the user specified in the url.
+          MyAppWeb.Policies.enforce!(conn, :user_is_self)
+          ...
+        end
    
   ## Policy Failures
 
-  When a policy returns anything other than `:ok`, that is interpreted as a policy failure.
+  Policies return `{:error, message}` to indicate a policy failure. If called as a plug, this
+  will halt the plug chain and send the `message` to your `policy_error` function, which is where
+  you choose how to handle the error.
 
-  When the policy is called from a plug (as opposed to `authorized?`), then your `policy_error(conn, error_data)` function is called. You should define at least one of these functions in same place you put your policies.
+  You should define at least one `policy_error` function in same place you put your policies.
+  
+  Example:
 
         def policy_error(conn, err_data) do
           conn
@@ -121,22 +205,17 @@ defmodule PolicyWonk.Policy do
           |> redirect(to: session_path(conn, :new))
         end
 
-  The `policy_error` function works just like a regular plug function. It takes a `conn`, and whatever was returned from the policy. You can manipulate the `conn` however you want to respond to that error. Then return the `conn`.
+  The `policy_error` function looks like a regular plug function. It takes a `conn`, and
+  whatever was returned from the policy. You can manipulate the `conn` however you want to respond
+  to the error. It must return the transformed `conn`.
 
   Since the policy failed, the `Enforce` plug will make sure `Plug.Conn.halt(conn)` is called.
 
   ## Policy Locations
 
-  When a policy is used in a single controller, then it should be defined on that controller. Same for the router. 
-
-  If a policy is used in multiple locations, then you should define it in a central policies.ex file that you refer to in your configuration data.
-
-  In general, when you invoke the `PolicyWonk.Enforce` or `PolicyWonk.EnforceAction` plugs, they detect if the incoming `conn` is being processed by a Phoenix controller or router. It looks in the appropriate controller or router for a matching policy first. If it doesn’t find one, it then looks in policy module specified in the configuration block.
-
-  This creates a form of policy inheritance/polymorphism. The controller (or router) calling the plug always has the authoritative say in what policy to use.
-
-  You can also specify the policy’s module when you invoke the Enforce or EnforceAction plugs. This will be the only module the plug looks for a policy in.
-
+  You can build as many Policy modules as you want in multiple umbrella applications. Simply
+  call `use PolicyWonk.Policy` to add the support functions to your module. Call `use PolicyWonk.Enforce`
+  to make your module a plug that can be called in the router.
   """
 
   @doc """
@@ -144,9 +223,14 @@ defmodule PolicyWonk.Policy do
 
   When called by the `PolicyWonk.Enforce` or `PolicyWonk.EnforceAction` plugs, the map will be the assigns field from the current conn.
 
-  Returns either `:ok`, or error_data that is passed to your `policy_error` function.
+  Must either `:ok`, or `{:error, message}`. In the event of an error, the message term will be
+  passed to your policy_error callback.
+
+  ## Parameters
+  * `conn` The first parameter is the current Plug.Conn object.
+  * `identifier` The second is any term you want to either identify the policy or pass data.
   """
-  @callback policy(Map.t(), any) :: :ok | {:error, any}
+  @callback policy(conn :: Plug.Conn.t, identifier :: any) :: :ok | {:error, any}
 
   @doc """
   Handle a failed policy. Called during the plug chain.
@@ -154,9 +238,16 @@ defmodule PolicyWonk.Policy do
   The second parameter is whatever was returned from your `policy` function other than :ok.
 
   Must return a conn, which you are free to transform.
+
+  ## Parameters
+  * `conn` The first parameter is the current Plug.Conn object. Transform this conn to handle
+  the specific error case.
+  * `message` The second is is the error message term returned from your policy.
   """
 
-  @callback policy_error(Plug.Conn.t(), any) :: Plug.Conn.t()
+  @callback policy_error(conn :: Plug.Conn.t(), message :: any) :: Plug.Conn.t()
+
+
 
   @format_error "Policies must return either :ok or an {:error, message} tuple"
 
@@ -173,12 +264,60 @@ defmodule PolicyWonk.Policy do
       @behaviour PolicyWonk.Policy
 
       # ----------------------------------------------------
-      def enforce(conn, policies), do: PolicyWonk.Policy.enforce(conn, __MODULE__, policies)
-      def enforce!(conn, policies), do: PolicyWonk.Policy.enforce!(conn, __MODULE__, policies)
+      @doc """
+      Callable as a local plug. Enforce accepts the current conn and a policy indicator.
+      It then calls the policy, evaluates the response and either passes or transforms
+      the conn with a failure.
+
+      You will normally only use this function if you want to enforce a policy that is
+      written into a controller. Then the plug call will look like this:
+
+            plug :enforce, :some_policy
+
+
+      If you want to enforce a policy from your router, please read the `PolicyWonk.Enforce`
+      documentation.
+
+      ## Parameters
+      * `conn` The current conn in the plug chain
+      * `policy` The policy or policies you want to enforce. This can be either a single
+      term representing one policy, or a list of policy terms.
+      """
+      def enforce(conn, policies) do
+        PolicyWonk.Policy.enforce(conn, __MODULE__, policies)
+      end
+
 
       # ----------------------------------------------------
-      def authorized?(conn, policies),
-        do: PolicyWonk.Policy.authorized?(conn, __MODULE__, policies)
+      @doc """
+      Evaluates one or more policies and either returns :ok (success) or raises an error.
+
+      This is useful for enforcing a policy within an action in a controller.
+
+      ## Parameters
+      * `conn` The current conn in the plug chain
+      * `policy` The policy or policies you want to enforce. This can be either a single
+      term representing one policy, or a list of policy terms.
+      """
+      def enforce!(conn, policies) do
+        PolicyWonk.Policy.enforce!(conn, __MODULE__, policies)
+      end
+
+      # ----------------------------------------------------
+      @doc """
+      Evaluates one or more policies and either returns `true` (success) or `false` (failure).
+
+      This is useful for choosing whether or not to render portions of a template, or for
+      conditional logic in a controller.
+
+      ## Parameters
+      * `conn` The current conn in the plug chain
+      * `policy` The policy or policies you want to enforce. This can be either a single
+      term representing one policy, or a list of policy terms.
+      """
+      def authorized?(conn, policies) do
+        PolicyWonk.Policy.authorized?(conn, __MODULE__, policies)
+      end
     end
 
     # quote
@@ -191,6 +330,7 @@ defmodule PolicyWonk.Policy do
 
   # ----------------------------------------------------
   # Enforce called as a (internal) plug
+  @doc false
   def enforce(conn, module, policies)
 
   # don't do anything if the conn is already halted
@@ -220,6 +360,7 @@ defmodule PolicyWonk.Policy do
 
   # ----------------------------------------------------
   # enforce that either returns :ok or raises an error
+  @doc false
   def enforce!(conn, module, policies)
 
   # enforce! a list of policies
@@ -242,6 +383,7 @@ defmodule PolicyWonk.Policy do
   end
 
   # ----------------------------------------------------
+  @doc false
   def authorized?(conn, module, policies)
 
   # enforce? that a list of policies pass

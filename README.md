@@ -3,6 +3,7 @@ policy_wonk
 
 [![Build Status](https://travis-ci.org/boydm/policy_wonk.svg?branch=master)](https://travis-ci.org/boydm/policy_wonk)
 [![Hex.pm](https://img.shields.io/hexpm/v/policy_wonk.svg)](https://hex.pm/packages/policy_wonk)
+[![Inline docs](http://inch-ci.org/github/boydm/phoenix_integration.svg?branch=master)](http://inch-ci.org/github/boydm/phoenix_integration)
 [![Hex.pm](https://img.shields.io/hexpm/dw/policy_wonk.svg)](https://hex.pm/packages/policy_wonk)
 [![Hex.pm](https://img.shields.io/hexpm/dt/policy_wonk.svg)](https://hex.pm/packages/policy_wonk)
 

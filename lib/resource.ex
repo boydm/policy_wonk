@@ -170,12 +170,27 @@ defmodule PolicyWonk.Resource do
           ...
         end
 
+  ## Resources in a single controller
 
-  ## Loader Locations
+  Sometimes you want to load a resource just across the actions of a single controller. Instead
+  of building up a seperate resource module, you can just add and load the resource in the
+  controller itself.
 
-  You can build as many Loader modules as you want in multiple umbrella applications. Simply
-  call `use PolicyWonk.Resource` to add the support functions to your module. Call `use PolicyWonk.Load`
-  to make your module a plug that can be called in the router.
+        defmodule MyAppWeb.Controller.AdminController do
+          use PolicyWonk.Resource         # set up support for resources
+          # do not need to use PolicyWonk.Load here...
+
+          plug :load, :thing
+
+          def policy( assigns, :thing ) do
+            # code that loads a thing...
+          end
+
+          def policy_error(conn, :thing) do
+            MyAppWeb.ErrorHandlers.resource_not_found(conn)
+          end
+        end
+
 
   """
 

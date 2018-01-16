@@ -189,6 +189,30 @@ defmodule PolicyWonk.Policy do
           ...
         end
    
+
+  ## Policies in a single controller
+
+  Sometimes you want to enforce a policy just across the actions of a single controller. Instead
+  of building up a seperate policy module, you can just add and enforce the policy in the
+  controller itself.
+
+        defmodule MyAppWeb.Controller.AdminController do
+          use PolicyWonk.Policy         # set up support for policies
+          # do not need to use PolicyWonk.Enforce here...
+
+          plug :enforce, :is_admin
+
+          def policy( assigns, :is_admin ) do
+            # something that checks if the current user is an admin...
+          end
+
+          def policy_error(conn, :current_user) do
+            MyAppWeb.ErrorHandlers.unauthorized(conn)
+          end
+        end
+
+
+
   ## Policy Failures
 
   Policies return `{:error, message}` to indicate a policy failure. If called as a plug, this
@@ -211,11 +235,6 @@ defmodule PolicyWonk.Policy do
 
   Since the policy failed, the `Enforce` plug will make sure `Plug.Conn.halt(conn)` is called.
 
-  ## Policy Locations
-
-  You can build as many Policy modules as you want in multiple umbrella applications. Simply
-  call `use PolicyWonk.Policy` to add the support functions to your module. Call `use PolicyWonk.Enforce`
-  to make your module a plug that can be called in the router.
   """
 
   @doc """

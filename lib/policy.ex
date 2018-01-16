@@ -233,9 +233,7 @@ defmodule PolicyWonk.Policy do
   @callback policy(conn :: Plug.Conn.t, identifier :: any) :: :ok | {:error, any}
 
   @doc """
-  Handle a failed policy. Called during the plug chain.
-
-  The second parameter is whatever was returned from your `policy` function other than :ok.
+  Handle a failed policy. Only called during the plug chain.
 
   Must return a conn, which you are free to transform.
 

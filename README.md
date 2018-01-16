@@ -12,6 +12,25 @@ PolicyWonk is a lightweight authorization and resource loading library for any P
 Note: I am in the process of building version 1.0. The code and tests look good and I am updating the documentation
 now. Expect errors if you read the docs on this branch for now.
 
+Policy Wonk is almost completely re-written for version 1.0. After living with it for well
+over a year, I realized there were a set of issues that warranted re-opening the underlying
+architecture.
+
+* It wasn't compatible with Phoenix 1.3 umbrella apps. Or rather, you couldn't have seperate
+policies for different apps in an umbrella.
+* It had a whole mess of complexity that simply wasn't needed. I never used
+most of the "shortcut" options since the more explicit versions (with slightly more
+typing) were always clearer.
+* Returning errors from Policies was too vague. I want to know errors are being processed!
+* The config file data isn't necessary in a more explicit model.
+* Naming was inconsistent between policies and resources.
+
+Version 1.0 takes these observations (and more), fixes them, and simplifies the configuration
+dramatically. It has less code and is overall simpler and faster.
+
+There is a little work to upgrade from a older versions, but the overall shape of your code
+will stay the same, so the work is small and well worth it.
+
 You can read [the full documentation here](https://hexdocs.pm/policy_wonk/1.0.0-rc.0).
 
 ## Authentication vs. Authorization
@@ -31,7 +50,7 @@ Add `policy_wonk` to the deps section of your application's `mix.exs` file
 defp deps do
   [
     # ...
-    {:policy_wonk, "~> 1.0"}
+    {:policy_wonk, "~> 1.0.0-rc.0"}
     # ...
   ]
 end
@@ -44,8 +63,8 @@ Don't forget to run `mix deps.get`
 Load and enforce the current user in a router:
 
       pipeline :browser_session do
-        plug MyAppWeb.Loaders, :current_user
-        plug MyAppWeb.Policies, :current_user
+        plug MyAppWeb.Resources,  :current_user
+        plug MyAppWeb.Policies,   :current_user
       end
       
       pipeline :admin do
@@ -113,30 +132,30 @@ In an action in a controller:
         ...
       end
 
-## Loaders
+## Resources
 
-Loaders are similar to policies in that you define functions that can be used in the plug chain.
-Instead of making a yes/now enforcement descision, a loader will load a resource and insert it
+Resources are similar to policies in that you define functions that can be used in the plug chain.
+Instead of making a yes/now enforcement descision, a `resource` will load a resource and insert it
 into the conn's `assigns` map.
 
 
       defmodule MyAppWeb.Loaders do
-        use PolicyWonk.Loader         # set up support for loaders
-        use PolicyWonk.LoadResource   # turn this module into an load resource plug
+        use PolicyWonk.Resource       # set up support for resources
+        use PolicyWonk.Load           # turn this module into an load resource plug
 
-        def load_resource( _conn, :user, %{"id" => user_id} ) do
+        def resource( _conn, :user, %{"id" => user_id} ) do
           case MyApp.Account.get_user(user_id) do
             nil ->  {:error, :user}
             %MyApp.Account.User{} = user -> {:ok, :user, user}
           end
         end
 
-        def load_error(conn, _resource_id) do
+        def resource_error(conn, _resource_id) do
           MyAppWeb.ErrorHandlers.resource_not_found( conn )
         end
       end
 
-See the the `PolicyWonk.Loader` documentation for details.
+See the the `PolicyWonk.Resource` documentation for details.
 
 
 ## Documentation

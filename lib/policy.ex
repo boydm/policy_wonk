@@ -348,14 +348,17 @@ defmodule PolicyWonk.Policy do
   def enforce(conn, module, policies)
 
   # don't do anything if the conn is already halted
+  @doc false
   def enforce(%Plug.Conn{halted: true} = conn, _, _), do: conn
 
   # enforce a list of policies
+  @doc false
   def enforce(%Plug.Conn{} = conn, module, policies) when is_list(policies) do
     Enum.reduce(policies, conn, &enforce(&2, module, &1))
   end
 
   # enforce a single policy
+  @doc false
   def enforce(%Plug.Conn{} = conn, module, policy) do
     case module.policy(conn.assigns, policy) do
       :ok ->
@@ -378,11 +381,13 @@ defmodule PolicyWonk.Policy do
   def enforce!(conn, module, policies)
 
   # enforce! a list of policies
+  @doc false
   def enforce!(%Plug.Conn{} = conn, module, policies) when is_list(policies) do
     Enum.each(policies, &enforce!(conn, module, &1))
   end
 
   # enforce! a single policies
+  @doc false
   def enforce!(%Plug.Conn{} = conn, module, policy) do
     case module.policy(conn.assigns, policy) do
       :ok ->
@@ -401,11 +406,13 @@ defmodule PolicyWonk.Policy do
   def authorized?(conn, module, policies)
 
   # enforce? that a list of policies pass
+  @doc false
   def authorized?(%Plug.Conn{} = conn, module, policies) when is_list(policies) do
     Enum.all?(policies, &authorized?(conn, module, &1))
   end
 
   # enforce? a single policy
+  @doc false
   def authorized?(%Plug.Conn{} = conn, module, policy) do
     case module.policy(conn.assigns, policy) do
       :ok ->

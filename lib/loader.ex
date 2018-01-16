@@ -67,11 +67,11 @@ defmodule PolicyWonk.Loader do
   """
 
   @doc """
-  Define a loader.
+  Load a resource.
 
   ## parameters
   * `conn`, the current conn in the plug chain. For informational purposes.
-  * `loader`, The loader you requested with invoking the plug
+  * `resource`, The resource term you requested with invoking the plug
   * `params`, the `params` field from the current `conn`. Passed in as a convenience. Useful for parsing and matching against.
           def load_resource( _conn, :user, %{"id" => user_id} ) do
             case Repo.get(Account.User, user_id) do
@@ -84,10 +84,10 @@ defmodule PolicyWonk.Loader do
   * `{:ok, :name, resource}` If the load succeeds, return the loaded resource in a tuple with :ok, the resource name as an atom, and the resource itself.
   * `error_data` If the load fails, return any error data you want
   """
-  @callback load_resource(Plug.Conn.t(), atom, Map.t()) :: {:ok, atom, any} | {:error, any}
+  @callback load_resource(conn :: Plug.Conn.t(), resource :: any, params :: Map.t()) :: {:ok, atom, any} | {:error, any}
 
   @doc """
-  Define a load error module.
+  Handle a load error.
 
   ## parameters
   * `conn`, the current conn in the plug chain. Transform this to handle the error.
@@ -104,7 +104,7 @@ defmodule PolicyWonk.Loader do
   ## Returns
   * `conn`, return the transformed `conn`, which will be used in the plug chain..
   """
-  @callback load_error(Plug.Conn.t(), any) :: Plug.Conn.t()
+  @callback load_error(conn :: Plug.Conn.t(), message :: any) :: Plug.Conn.t()
 
   @format_error "Loaders must return either {:ok, key, resource} or an {:error, message}"
 
@@ -131,6 +131,7 @@ defmodule PolicyWonk.Loader do
 
   # ----------------------------------------------------
   # Enforce called as a (internal) plug
+  @doc false
   def load(conn, module, resources, async \\ false)
 
   # don't do anything if the conn is already halted
@@ -182,6 +183,7 @@ defmodule PolicyWonk.Loader do
 
   # ----------------------------------------------------
   # load that returns the resource or raises an error
+  @doc false
   def load!(conn, module, resources, async \\ false)
 
   # load! a list of resources, synchronously

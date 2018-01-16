@@ -16,7 +16,7 @@ defmodule PolicyWonk.Resource do
       end
 
   The above loader takes the `user_id` (which is from the params of the current request) and
-  attemps to load a user model from the database. The result is put into the conn's assigns field
+  attempts to load a user model from the database. The result is put into the conn's assigns field
   under the `:user` key.
 
   Your loaders don't need to hit a database. You could generate data or otherwise prepare something
@@ -173,7 +173,7 @@ defmodule PolicyWonk.Resource do
   ## Resources in a single controller
 
   Sometimes you want to load a resource just across the actions of a single controller. Instead
-  of building up a seperate resource module, you can just add and load the resource in the
+  of building up a separate resource module, you can just add and load the resource in the
   controller itself.
 
         defmodule MyAppWeb.Controller.AdminController do

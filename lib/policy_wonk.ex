@@ -9,7 +9,7 @@ defmodule PolicyWonk do
   over a year, I realized there were a set of issues that warranted re-opening the underlying
   architecture.
 
-  * It wasn't compatible with Phoenix 1.3 umbrella apps. Or rather, you couldn't have seperate
+  * It wasn't compatible with Phoenix 1.3 umbrella apps. Or rather, you couldn't have separate
   policies for different apps in an umbrella.
   * It had a whole mess of complexity that simply wasn't needed. I never used
   most of the "shortcut" options since the more explicit versions (with slightly more
@@ -56,7 +56,7 @@ defmodule PolicyWonk do
   # Policies
 
   With PolicyWonk, you create policies and loaders for your application. They can be used
-  as plugs in your router or controller or called for yes/no descisions in a template or controller.
+  as plugs in your router or controller or called for yes/no decisions in a template or controller.
 
   This lets you enforce things like "a user is signed in" or "the admin has this permission" in the
   router. Or you could use a policy to determine if you should render a set of UI.  
@@ -88,7 +88,7 @@ defmodule PolicyWonk do
   # Loaders
 
   Loaders are similar to policies in that you define functions that can be used in the plug chain.
-  Instead of making a yes/no enforcement descision, a loader will load a resource and insert it
+  Instead of making a yes/no enforcement decision, a loader will load a resource and insert it
   into the conn's `assigns` map.
 
 
@@ -111,9 +111,9 @@ defmodule PolicyWonk do
   See the the `PolicyWonk.Resource` documentation for details.
 
 
-  # Behaviours
+  # Behaviors
 
-  PolicyWonk defines two behaviours for creating policies and resource loaders.
+  PolicyWonk defines two behaviors for creating policies and resource loaders.
 
   * `PolicyWonk.Policy` Callbacks for defining a policy and handling policy failures.
   * `PolicyWonk.Resource` Callbacks for defining a resource loader and handing load failures.
@@ -129,7 +129,7 @@ defmodule PolicyWonk do
 
   In a template:
 
-        <%= if MyAppWeb.Policies.authorized?(@conn, {:admin_permission, "dashbaord"}) do %>
+        <%= if MyAppWeb.Policies.authorized?(@conn, {:admin_permission, "dashboard"}) do %>
           <%= link "Admin Dashboard", to: admin_dashboard_path(@conn, :index) %>
         <% end %>
 
@@ -159,7 +159,7 @@ defmodule PolicyWonk do
   PolicyWonk.LoadResource ->    PolicyWonk.Load
   PolicyWonk.Loader ->          PolicyWonk.Resource
 
-  Likewise, within a resoruce module the following callback names have changed.
+  Likewise, within a resource module the following callback names have changed.
 
   load_resource ->  resource
   load_error ->     resource_error
@@ -171,7 +171,7 @@ defmodule PolicyWonk do
   from your router.
 
   After using them in your policy modules, call ***your*** module in the router. This lets you be
-  explict about which policy modules are used where without anything in config.exs.
+  explicit about which policy modules are used where without anything in config.exs.
 
   You can have different policy modules for different apps in an umbrella project, or simply build
   up a library policy modules that you can re-use as appropriate.

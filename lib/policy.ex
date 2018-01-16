@@ -3,8 +3,8 @@ defmodule PolicyWonk.Policy do
 
   # Overview
 
-  A policy is a function that makes a simple yes/no decision. This descision can then be
-  inserted into your pluch chain to enforce authorization rules at the router.
+  A policy is a function that makes a simple yes/no decision. This decision can then be
+  inserted into your plug chain to enforce authorization rules at the router.
 
   Simple policy example:
 
@@ -146,7 +146,7 @@ defmodule PolicyWonk.Policy do
 
   This is the one of the most complex policies I use. By passing in `{:permission, perms}`
   to identify the policy, I rely on Elixir to match on the `:permission` atom. I can then pass
-  aditional data through the `perms` term.
+  additional data through the `perms` term.
 
   This policy is typically enforced like this:
 
@@ -165,18 +165,18 @@ defmodule PolicyWonk.Policy do
   When being enforced via a plug, return :ok allows the plug chain to continue unchanged.
 
   Returning `{:error, message}` halts the plug chain and sends the message to your `policy_error`
-  function. This is where you can choose how to handle the error. Perhaps by redirectying,
+  function. This is where you can choose how to handle the error. Perhaps by redirecting,
   signing the user out, or some other action.
 
 
   ## Use outside the plug chain
 
   Policies are usually enforced through a plug, but can also be used to decide if a user has
-  permission to see a piece of UI or can use some othe functionality.
+  permission to see a piece of UI or can use some other functionality.
 
   In a template:
 
-        <%= if MyAppWeb.Policies.authorized?(@conn, {:admin_permission, "dashbaord"}) do %>
+        <%= if MyAppWeb.Policies.authorized?(@conn, {:admin_permission, "dashboard"}) do %>
           <%= link "Admin Dashboard", to: admin_dashboard_path(@conn, :index) %>
         <% end %>
 
@@ -193,7 +193,7 @@ defmodule PolicyWonk.Policy do
   ## Policies in a single controller
 
   Sometimes you want to enforce a policy just across the actions of a single controller. Instead
-  of building up a seperate policy module, you can just add and enforce the policy in the
+  of building up a separate policy module, you can just add and enforce the policy in the
   controller itself.
 
         defmodule MyAppWeb.Controller.AdminController do

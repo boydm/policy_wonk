@@ -30,7 +30,7 @@ defmodule PolicyWonk.Load do
 
   To use your resources as a plug, you can just use the new module you created.
 
-  Load resoruces in a router:
+  Load resources in a router:
 
         pipeline :browser_session do
           plug MyAppWeb.Resources,  :user

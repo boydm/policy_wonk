@@ -65,20 +65,20 @@ Don't forget to run `mix deps.get`
 ## Examples
 
 Load and enforce the current user in a router:
+```elixir
+pipeline :browser_session do
+  plug MyAppWeb.Resources,  :current_user
+  plug MyAppWeb.Policies,   :current_user
+end
 
-      pipeline :browser_session do
-        plug MyAppWeb.Resources,  :current_user
-        plug MyAppWeb.Policies,   :current_user
-      end
-      
-      pipeline :admin do
-        plug MyAppWeb.Policies, {:admin_permission, "dashboard"}
-      end
-
+pipeline :admin do
+  plug MyAppWeb.Policies, {:admin_permission, "dashboard"}
+end
+```
 In a controller:
-
-      plug MyAppWeb.Policies, {:admin_permission, "dashboard"}
-
+```elixir
+plug MyAppWeb.Policies, {:admin_permission, "dashboard"}
+```
 
 ## Policies
 
@@ -91,25 +91,25 @@ router. Or you could use a policy to determine if you should render a set of UI.
 If a policy fails, it halts your plug chain and lets you decide what to do with the error.
 
 Example policy:
+```elixir
+defmodule MyAppWeb.Policies do
+  use PolicyWonk.Policy         # set up support for policies
+  use PolicyWonk.Enforce        # turn this module into an enforcement plug
 
-      defmodule MyAppWeb.Policies do
-        use PolicyWonk.Policy         # set up support for policies
-        use PolicyWonk.Enforce        # turn this module into an enforcement plug
+  def policy( assigns, :current_user ) do
+    case assigns[:current_user] do
+      %MyApp.Account.User{} ->
+        :ok
+      _ ->
+        {:error, :current_user}
+    end
+  end
 
-        def policy( assigns, :current_user ) do
-          case assigns[:current_user] do
-            %MyApp.Account.User{} ->
-              :ok
-            _ ->
-              {:error, :current_user}
-          end
-        end
-
-        def policy_error(conn, :current_user) do
-          MyAppWeb.ErrorHandlers.unauthenticated(conn, "Must be logged in")
-        end
-      end
-
+  def policy_error(conn, :current_user) do
+    MyAppWeb.ErrorHandlers.unauthenticated(conn, "Must be logged in")
+  end
+end
+```
 See the the `PolicyWonk.Policy` documentation for details.
 
 ## Policies outside plugs
@@ -122,43 +122,43 @@ functions, which you can use in templates or controllers to decide what UI to sh
 an error under certain condisions.
 
 In a template:
-
-      <%= if MyAppWeb.Policies.authorized?(@conn, {:admin_permission, "dashbaord"}) do %>
-        <%= link "Admin Dashboard", to: admin_dashboard_path(@conn, :index) %>
-      <% end %>
-
+```eex
+<%= if MyAppWeb.Policies.authorized?(@conn, {:admin_permission, "dashboard"}) do %>
+  <%= link "Admin Dashboard", to: admin_dashboard_path(@conn, :index) %>
+<% end %>
+```
 In an action in a controller:
-
-      def settings(conn, params) do
-        ...
-        # raise an error if the current user is not the user specified in the url.
-        MyAppWeb.Policies.enforce!(conn, :user_is_self)
-        ...
-      end
-
+```elixir
+def settings(conn, params) do
+  ...
+  # raise an error if the current user is not the user specified in the url.
+  MyAppWeb.Policies.enforce!(conn, :user_is_self)
+  ...
+end
+```
 ## Resources
 
 Resources are similar to policies in that you define functions that can be used in the plug chain.
 Instead of making a yes/now enforcement descision, a `resource` will load a resource and insert it
 into the conn's `assigns` map.
 
+```elixir
+defmodule MyAppWeb.Loaders do
+  use PolicyWonk.Resource       # set up support for resources
+  use PolicyWonk.Load           # turn this module into an load resource plug
 
-      defmodule MyAppWeb.Loaders do
-        use PolicyWonk.Resource       # set up support for resources
-        use PolicyWonk.Load           # turn this module into an load resource plug
+  def resource( _conn, :user, %{"id" => user_id} ) do
+    case MyApp.Account.get_user(user_id) do
+      nil ->  {:error, :user}
+      %MyApp.Account.User{} = user -> {:ok, :user, user}
+    end
+  end
 
-        def resource( _conn, :user, %{"id" => user_id} ) do
-          case MyApp.Account.get_user(user_id) do
-            nil ->  {:error, :user}
-            %MyApp.Account.User{} = user -> {:ok, :user, user}
-          end
-        end
-
-        def resource_error(conn, _resource_id) do
-          MyAppWeb.ErrorHandlers.resource_not_found( conn )
-        end
-      end
-
+  def resource_error(conn, _resource_id) do
+    MyAppWeb.ErrorHandlers.resource_not_found( conn )
+  end
+end
+```
 See the the `PolicyWonk.Resource` documentation for details.
 
 

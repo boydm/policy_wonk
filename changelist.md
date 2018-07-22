@@ -1,5 +1,11 @@
 ## policy_wonk Changelist
 
+### 1.0.0.rc.1
+* Take a dializer type fix from Tyler Clemens (tielur)
+
+### 1.0.0.rc.0
+* Simplification of the policy engine
+
 ### 0.2.1
 * Relaxed the Elixir version requirement back to 1.3 with OTP 18. Tested via Travis.
 

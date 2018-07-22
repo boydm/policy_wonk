@@ -246,10 +246,10 @@ defmodule PolicyWonk.Policy do
   passed to your policy_error callback.
 
   ## Parameters
-  * `conn` The first parameter is the current Plug.Conn object.
+  * `assigns` The first parameter is the current assigns on the Plug.Conn object.
   * `identifier` The second is any term you want to either identify the policy or pass data.
   """
-  @callback policy(conn :: Plug.Conn.t(), identifier :: any) :: :ok | {:error, any}
+  @callback policy(assigns :: Map.t(), identifier :: any) :: :ok | {:error, any}
 
   @doc """
   Handle a failed policy. Only called during the plug chain.

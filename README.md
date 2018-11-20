@@ -83,7 +83,7 @@ plug MyAppWeb.Policies, {:admin_permission, "dashboard"}
 ## Policies
 
 With PolicyWonk, you create policies and loaders for your application. They can be used
-as plugs in your router or controller or called for yes/now descisions in a template or controller.
+as plugs in your router or controller or called for yes/no decisions in a template or controller.
 
 This lets you enforce things like "a user is signed in" or "the admin has this permission" in the
 router. Or you could use a policy to determine if you should render a set of UI.  
@@ -115,11 +115,11 @@ See the the `PolicyWonk.Policy` documentation for details.
 ## Policies outside plugs
 
 In addition to evaluating policies in a plug chain, you will often want to test a policy
-when rendering ui, processing an action in a controller, or somewhere else.
+when rendering UI, processing an action in a controller, or somewhere else.
 
 The `use PolicyWonk.Policy` call in your policy module adds the `enforce!/2` and `authorized?/2`
 functions, which you can use in templates or controllers to decide what UI to show or to raise
-an error under certain condisions.
+an error under certain conditions.
 
 In a template:
 ```eex
@@ -139,7 +139,7 @@ end
 ## Resources
 
 Resources are similar to policies in that you define functions that can be used in the plug chain.
-Instead of making a yes/now enforcement descision, a `resource` will load a resource and insert it
+Instead of making a yes/no enforcement decision, a `resource` will load a resource and insert it
 into the conn's `assigns` map.
 
 ```elixir

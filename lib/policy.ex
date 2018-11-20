@@ -329,8 +329,8 @@ defmodule PolicyWonk.Policy do
       * `policy` The policy or policies you want to enforce. This can be either a single
       term representing one policy, or a list of policy terms.
       """
-      def authorized?(conn, policies) do
-        PolicyWonk.Policy.authorized?(conn, __MODULE__, policies)
+      def authorized?(authorization_context, policies) do
+        PolicyWonk.Policy.authorized?(authorization_context, __MODULE__, policies)
       end
     end
 
@@ -403,18 +403,18 @@ defmodule PolicyWonk.Policy do
 
   # ----------------------------------------------------
   @doc false
-  def authorized?(conn, module, policies)
+  def authorized?(authorization_context, module, policies)
 
   # enforce? that a list of policies pass
   @doc false
-  def authorized?(%Plug.Conn{} = conn, module, policies) when is_list(policies) do
-    Enum.all?(policies, &authorized?(conn, module, &1))
+  def authorized?(%{assigns: assigns}, module, policies) when is_list(policies) do
+    Enum.all?(policies, &authorized?(%{assigns: assigns}, module, &1))
   end
 
   # enforce? a single policy
   @doc false
-  def authorized?(%Plug.Conn{} = conn, module, policy) do
-    case module.policy(conn.assigns, policy) do
+  def authorized?(%{assigns: assigns}, module, policy) do
+    case module.policy(assigns, policy) do
       :ok ->
         true
 

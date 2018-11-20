@@ -104,6 +104,13 @@ defmodule PolicyWonk.PolicyTest do
   end
 
   # --------------------------------------------------------
+  test "use authorized?! returns true on policy success when not using a conn", %{conn: conn} do
+    authorization_context = %{assigns: conn.assigns}
+    assert ModA.authorized?(authorization_context, [:a]) == true
+    assert ModA.authorized?(authorization_context, :a) == true
+  end
+
+  # --------------------------------------------------------
   test "use authorized? raises on a failure", %{conn: conn} do
     assert ModA.authorized?(conn, [:fails]) == false
     assert ModA.authorized?(conn, :fails) == false
@@ -117,6 +124,13 @@ defmodule PolicyWonk.PolicyTest do
   test "authorized? uses the requested policy on the requested module", %{conn: conn} do
     assert Policy.authorized?(conn, ModA, [:a]) == true
     assert Policy.authorized?(conn, ModA, :a) == true
+  end
+
+  # --------------------------------------------------------
+  test "authorized? uses the requested policy on the requested module when not using a conn", %{conn: conn} do
+    authorization_context = %{assigns: conn.assigns}
+    assert Policy.authorized?(authorization_context, ModA, [:a]) == true
+    assert Policy.authorized?(authorization_context, ModA, :a) == true
   end
 
   # --------------------------------------------------------

@@ -9,11 +9,9 @@ policy_wonk
 
 PolicyWonk is a lightweight authorization and resource loading library for any Plug or Phoenix application.
 
-## Note on v1.0.0-rc.0
+## Note on v1.0.0-rc.1
 
-I just released version 1.0.0-rc.0 to hex. The code and tests look good and the docs have
-been updated, although probably need proofreading. This is where it is going, so please try it
-out and let me know if you see have any issues with it. I'll probably let it sit a few weeks
+I just released version 1.0.0-rc.1 to hex. I'll probably let it sit a few weeks
 before declaring it done.
 
 Policy Wonk is almost completely re-written for version 1.0. After living with it for well

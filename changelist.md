@@ -2,6 +2,7 @@
 
 ### 1.0.0.rc.1
 * Take a dializer type fix from Tyler Clemens (tielur)
+* Can now pass non-plug contexts into policies. (adamzaninovich)
 
 ### 1.0.0.rc.0
 * Simplification of the policy engine

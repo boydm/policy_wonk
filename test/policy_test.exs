@@ -127,7 +127,9 @@ defmodule PolicyWonk.PolicyTest do
   end
 
   # --------------------------------------------------------
-  test "authorized? uses the requested policy on the requested module when not using a conn", %{conn: conn} do
+  test "authorized? uses the requested policy on the requested module when not using a conn", %{
+    conn: conn
+  } do
     authorization_context = %{assigns: conn.assigns}
     assert Policy.authorized?(authorization_context, ModA, [:a]) == true
     assert Policy.authorized?(authorization_context, ModA, :a) == true

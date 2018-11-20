@@ -173,7 +173,7 @@ defmodule PolicyWonk do
   Likewise, within a resource module the following callback names have changed.
 
   `load_resource` is now `resource`
-  
+
   `load_error` is now `resource_error`
 
 

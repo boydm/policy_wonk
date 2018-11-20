@@ -10,9 +10,9 @@ defmodule PolicyWonk.Mixfile do
       app: :policy_wonk,
       version: @version,
       elixir: "~> 1.4",
-      elixirc_paths: elixirc_paths(Mix.env),
-      build_embedded: Mix.env == :prod,
-      start_permanent: Mix.env == :prod,
+      elixirc_paths: elixirc_paths(Mix.env()),
+      build_embedded: Mix.env() == :prod,
+      start_permanent: Mix.env() == :prod,
       deps: deps(),
       package: [
         contributors: ["Boyd Multerer"],
@@ -20,7 +20,6 @@ defmodule PolicyWonk.Mixfile do
         licenses: ["MIT"],
         links: %{github: @github, tutorial: @tutorial}
       ],
-
       name: "policy_wonk",
       source_url: @github,
       docs: docs(),
@@ -35,7 +34,7 @@ defmodule PolicyWonk.Mixfile do
 
   # Specifies which paths to compile per environment.
   defp elixirc_paths(:test), do: ["lib", "test/support"]
-  defp elixirc_paths(_),     do: ["lib"]
+  defp elixirc_paths(_), do: ["lib"]
 
   def application do
     [applications: [:logger]]
@@ -48,7 +47,7 @@ defmodule PolicyWonk.Mixfile do
       # Docs dependencies
       {:ex_doc, ">= 0.0.0", only: [:dev, :docs]},
       {:inch_ex, ">= 0.0.0", only: [:dev, :docs]},
-      {:credo, "~> 0.8.10", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.0", only: [:dev, :test], runtime: false}
     ]
   end
 
@@ -60,8 +59,3 @@ defmodule PolicyWonk.Mixfile do
     ]
   end
 end
-
-
-
-
-

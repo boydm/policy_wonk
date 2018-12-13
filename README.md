@@ -9,10 +9,7 @@ policy_wonk
 
 PolicyWonk is a lightweight authorization and resource loading library for any Plug or Phoenix application.
 
-## Note on v1.0.0-rc.1
-
-I just released version 1.0.0-rc.1 to hex. I'll probably let it sit a few weeks
-before declaring it done.
+## Note on v1.0.0
 
 Policy Wonk is almost completely re-written for version 1.0. After living with it for well
 over a year, I realized there were a set of issues that warranted re-opening the underlying
@@ -52,7 +49,7 @@ Add `policy_wonk` to the deps section of your application's `mix.exs` file
 defp deps do
   [
     # ...
-    {:policy_wonk, "~> 1.0.0-rc.0"}
+    {:policy_wonk, "~> 1.0.0"}
     # ...
   ]
 end
